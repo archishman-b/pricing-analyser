@@ -2,6 +2,8 @@
 
 **A browser-native pricing intelligence workbench for strategy professionals who have always had the frameworks but never had the tools.**
 
+→ **[Launch the tool](https://archishman-b.github.io/pricing-analyser/)** · **[Build journal](https://archishman-b.github.io/pricing-analyser/pricing-analyser-build-journal.html)**
+
 ---
 
 ## The problem this solves
@@ -37,7 +39,7 @@ The Pricing Analyser is a browser-based pricing intelligence workbench. Upload a
 
 ## How to use it
 
-1. Open `pricing-analyser/index.html` in any modern browser
+1. Open [archishman-b.github.io/pricing-analyser](https://archishman-b.github.io/pricing-analyser/) in any modern browser
 2. Click **Load data** and upload a CSV or XLSX transaction export — or click **Load sample data** to explore with synthetic NAPA-style B2B transaction data
 3. Map your columns using the schema wizard (auto-suggested from column names)
 4. Navigate to any module in the left sidebar
@@ -55,15 +57,22 @@ This is not a technical constraint — it is a deliberate product decision. Pric
 
 ```
 pricing-analyser/
-├── index.html                   ← full application shell (77KB)
-├── m1-waterfall.js              ← M1 price waterfall module
-├── m4-margin.js                 ← M4 margin decomposition module
-├── sample-b2b-transactions.csv  ← synthetic NAPA-style demo data
-└── build-journal.html           ← full PM lifecycle documentation
+├── index.html                            ← application shell + AppState + module registry
+├── m1-waterfall.js                       ← price waterfall engine
+├── m2-pricebands.js                      ← OLS regression + price band analysis
+├── m3-governance.js                      ← discount governance + compliance scoring
+├── m4-margin.js                          ← breakeven + margin decomposition
+├── m5-eve.js                             ← EVE model + anchor simulator
+├── m6-saas.js                            ← SaaS studio (7 tabs)
+├── m7-competitive.js                     ← competitive intelligence
+├── m8-behavlab.js                        ← behavioural pricing lab
+├── sample-b2b-transactions.csv           ← 2,000-row synthetic demo dataset
+├── pricing-analyser-bundled.html         ← single-file version for local use
+└── pricing-analyser-build-journal.html   ← full PM lifecycle documentation
 ```
 
 Libraries loaded from CDN — no npm, no build pipeline:
-`PapaParse 5.4` · `SheetJS 0.18` · `Chart.js 4.4` · `math.js 12` · `jsPDF 2.5`
+`PapaParse 5.4` · `SheetJS 0.18` · `Chart.js 4.4` · `math.js 12` · `jsPDF 2.5` · `html2canvas 1.4`
 
 ---
 
@@ -79,13 +88,13 @@ The Pricing Analyser is the tool I needed on every engagement and never had.
 
 ## Build in public
 
-This project is being built in public. The methodology behind every analytical decision is documented in the [build journal](build-journal.html) — the PM lifecycle, the architecture decisions, the consulting frameworks being operationalised.
+This project is being built in public. The methodology behind every analytical decision is documented in the [build journal](https://archishman-b.github.io/pricing-analyser/pricing-analyser-build-journal.html) — the PM lifecycle, the architecture decisions, the consulting frameworks being operationalised.
 
 ---
 
 ## Companion tool
 
-[DataBridge](../databridge/databridge.html) — a browser-based no-code data workbench for ingestion, joining, filtering, and transformation. The data layer that feeds the Pricing Analyser.
+[DataBridge](https://archishman-b.github.io/databridge/databridge.html) — a browser-based no-code data workbench for ingestion, joining, filtering, and transformation. The data layer that feeds the Pricing Analyser.
 
 ---
 
