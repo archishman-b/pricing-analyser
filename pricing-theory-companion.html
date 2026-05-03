@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Pricing Companion — Theory Behind the Analyser</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap');
+
+/* ── TOKENS ── */
+:root {
+  --ink:       #1C1A16;
+  --ink-2:     #4A4740;
+  --ink-3:     #8A8680;
+  --paper:     #F8F5EF;
+  --paper-2:   #F0EDE5;
+  --paper-3:   #E8E3D8;
+  --rule:      rgba(28,26,22,0.10);
+  --rule-2:    rgba(28,26,22,0.05);
+  --amber:     #B85C00;
+  --amber-lt:  #FBF0E4;
+  --teal:      #0A6B50;
+  --teal-lt:   #E4F3EE;
+  --red:       #9C2A2A;
+  --red-lt:    #FAE8E8;
+  --purple:    #4B3F9A;
+  --purple-lt: #EEEDFB;
+  --gold:      #C8913A;
+  --gold-lt:   #FDF5E8;
+  --navy:      #1A2E4A;
+  --navy-lt:   #E8EEF6;
+  --accent:    #C8913A;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  line-height: 1.65;
+  font-size: 16px;
+}
+
+/* ── LAYOUT ── */
+.page-wrap {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: 100vh;
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  background: var(--ink);
+  color: var(--paper);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.sidebar-brand {
+  padding: 28px 24px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.sidebar-brand-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 16px;
+  color: var(--paper);
+  line-height: 1.3;
+  margin-bottom: 4px;
+}
+.sidebar-brand-sub {
+  font-size: 10px;
+  color: rgba(248,245,239,0.4);
+  font-family: 'DM Mono', monospace;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.sidebar-body { flex: 1; padding: 14px 0; overflow-y: auto; }
+.nav-section-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: rgba(248,245,239,0.3);
+  padding: 12px 24px 5px;
+}
+.nav-link {
+  display: block;
+  padding: 7px 24px;
+  font-size: 12px;
+  color: rgba(248,245,239,0.65);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  transition: all .15s;
+  line-height: 1.4;
+}
+.nav-link:hover {
+  color: var(--paper);
+  background: rgba(255,255,255,0.06);
+}
+.nav-link.active {
+  color: var(--gold);
+  border-left-color: var(--gold);
+  background: rgba(200,145,58,0.08);
+}
+.nav-link small {
+  display: block;
+  font-size: 10px;
+  color: rgba(248,245,239,0.3);
+  margin-top: 1px;
+}
+.nav-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.07);
+  margin: 8px 24px;
+}
+
+/* ── MAIN ── */
+.main { overflow-x: hidden; }
+
+/* ── HERO ── */
+.hero {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 64px 72px 56px;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -80px; right: -80px;
+  width: 420px; height: 420px;
+  border-radius: 50%;
+  border: 1px solid rgba(200,145,58,0.1);
+  pointer-events: none;
+}
+.hero::after {
+  content: '';
+  position: absolute;
+  bottom: -60px; left: 200px;
+  width: 280px; height: 280px;
+  border-radius: 50%;
+  border: 1px solid rgba(200,145,58,0.06);
+  pointer-events: none;
+}
+.hero-eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 16px;
+}
+.hero-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(32px, 5vw, 52px);
+  font-weight: 400;
+  line-height: 1.15;
+  margin-bottom: 14px;
+  max-width: 700px;
+}
+.hero-title em { font-style: italic; color: var(--gold); }
+.hero-sub {
+  font-size: 15px;
+  color: rgba(248,245,239,0.6);
+  max-width: 560px;
+  line-height: 1.75;
+  margin-bottom: 32px;
+}
+.hero-sources {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.source-chip {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 11px;
+  color: rgba(248,245,239,0.7);
+  font-family: 'DM Mono', monospace;
+}
+
+/* ── CONTENT SECTIONS ── */
+.content-section {
+  padding: 56px 72px;
+  border-bottom: 1px solid var(--rule);
+  scroll-margin-top: 20px;
+}
+.content-section:last-child { border-bottom: none; }
+
+.section-eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-eyebrow::after {
+  content: '';
+  flex: 0 0 40px;
+  height: 1px;
+  background: var(--rule);
+}
+.section-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(22px, 3vw, 32px);
+  font-weight: 400;
+  line-height: 1.2;
+  margin-bottom: 10px;
+  color: var(--ink);
+}
+.section-subtitle {
+  font-size: 14px;
+  color: var(--ink-3);
+  font-style: italic;
+  margin-bottom: 28px;
+  max-width: 600px;
+  line-height: 1.6;
+}
+
+/* ── BODY TEXT ── */
+.body-text {
+  font-size: 15px;
+  color: var(--ink-2);
+  line-height: 1.85;
+  max-width: 720px;
+  margin-bottom: 20px;
+}
+.body-text strong { color: var(--ink); font-weight: 500; }
+.body-text em { font-style: italic; color: var(--ink-2); }
+
+/* ── PULL QUOTE ── */
+.pull-quote {
+  border-left: 3px solid var(--gold);
+  margin: 28px 0;
+  padding: 18px 24px;
+  background: var(--gold-lt);
+  border-radius: 0 8px 8px 0;
+  max-width: 680px;
+}
+.pull-quote-text {
+  font-family: 'DM Serif Display', serif;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.pull-quote-attr {
+  font-size: 11px;
+  color: var(--ink-3);
+  font-family: 'DM Mono', monospace;
+  letter-spacing: .04em;
+}
+
+/* ── CALLOUT BOXES ── */
+.callout {
+  border-left: 3px solid;
+  border-radius: 0 8px 8px 0;
+  padding: 14px 18px;
+  margin: 20px 0;
+  max-width: 720px;
+}
+.callout-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 6px;
+}
+.callout-body {
+  font-size: 13px;
+  line-height: 1.7;
+}
+.callout-theory  { border-color: var(--purple); background: var(--purple-lt); }
+.callout-theory .callout-title  { color: var(--purple); }
+.callout-theory .callout-body   { color: #2C245A; }
+.callout-practice{ border-color: var(--teal);   background: var(--teal-lt); }
+.callout-practice .callout-title{ color: var(--teal); }
+.callout-practice .callout-body { color: #063D2E; }
+.callout-warning { border-color: var(--red);    background: var(--red-lt); }
+.callout-warning .callout-title { color: var(--red); }
+.callout-warning .callout-body  { color: #4A1414; }
+.callout-insight { border-color: var(--amber);  background: var(--amber-lt); }
+.callout-insight .callout-title { color: var(--amber); }
+.callout-insight .callout-body  { color: #3D2000; }
+.callout-module  { border-color: var(--navy);   background: var(--navy-lt); }
+.callout-module .callout-title  { color: var(--navy); }
+.callout-module .callout-body   { color: #0D1E33; }
+
+/* ── FORMULA ── */
+.formula-block {
+  background: var(--ink);
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin: 20px 0;
+  max-width: 600px;
+}
+.formula-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 10px;
+}
+.formula-main {
+  font-family: 'DM Mono', monospace;
+  font-size: 16px;
+  color: #F8F5EF;
+  margin-bottom: 8px;
+  line-height: 1.6;
+}
+.formula-gloss {
+  font-size: 12px;
+  color: rgba(248,245,239,0.5);
+  line-height: 1.6;
+  font-family: 'DM Mono', monospace;
+}
+
+/* ── TWO-COL COMPARE ── */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin: 20px 0;
+  max-width: 720px;
+}
+.col-card {
+  background: var(--paper-2);
+  border-radius: 10px;
+  padding: 16px 18px;
+  border: 1px solid var(--rule);
+}
+.col-card-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 10px;
+}
+.col-card-item {
+  font-size: 13px;
+  color: var(--ink-2);
+  padding: 5px 0;
+  border-bottom: 1px solid var(--rule-2);
+  line-height: 1.5;
+  display: flex;
+  gap: 8px;
+}
+.col-card-item:last-child { border: none; }
+
+/* ── NUMBERED LIST ── */
+.numbered-list { margin: 16px 0; max-width: 680px; }
+.numbered-item {
+  display: flex;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--rule-2);
+}
+.numbered-item:last-child { border: none; }
+.numbered-num {
+  font-family: 'DM Serif Display', serif;
+  font-size: 22px;
+  color: var(--gold);
+  flex-shrink: 0;
+  line-height: 1;
+  margin-top: 2px;
+  min-width: 28px;
+}
+.numbered-content {}
+.numbered-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.numbered-text {
+  font-size: 13px;
+  color: var(--ink-2);
+  line-height: 1.65;
+}
+
+/* ── CONCEPT TABLE ── */
+.concept-table {
+  width: 100%;
+  max-width: 720px;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 13px;
+}
+.concept-table th {
+  text-align: left;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--ink-3);
+  padding: 8px 12px;
+  border-bottom: 2px solid var(--rule);
+}
+.concept-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--rule-2);
+  color: var(--ink-2);
+  vertical-align: top;
+  line-height: 1.55;
+}
+.concept-table td:first-child {
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.concept-table tr:last-child td { border: none; }
+
+/* ── MODULE HEADER TAG ── */
+.module-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--navy);
+  color: var(--paper);
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+/* ── WATERFALL DIAGRAM ── */
+.waterfall-diagram {
+  background: var(--ink);
+  border-radius: 12px;
+  padding: 24px 28px;
+  margin: 24px 0;
+  max-width: 580px;
+}
+.wf-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 16px;
+}
+.wf-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.wf-name {
+  font-size: 12px;
+  color: rgba(248,245,239,0.7);
+  flex: 0 0 160px;
+  font-family: 'DM Mono', monospace;
+}
+.wf-bar-wrap {
+  flex: 1;
+  height: 24px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+.wf-bar {
+  height: 100%;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: rgba(0,0,0,0.7);
+  font-weight: 500;
+  transition: width .6s ease;
+}
+.wf-arrow {
+  font-size: 12px;
+  color: rgba(248,245,239,0.2);
+  flex: 0 0 16px;
+  text-align: center;
+}
+
+/* ── BIAS GRID ── */
+.bias-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+  margin: 20px 0;
+}
+.bias-card {
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.bias-num {
+  font-family: 'DM Serif Display', serif;
+  font-size: 28px;
+  color: var(--gold);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.bias-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.bias-desc {
+  font-size: 12px;
+  color: var(--ink-3);
+  line-height: 1.6;
+}
+.bias-insight {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--amber);
+  font-style: italic;
+  line-height: 1.5;
+  border-top: 1px solid var(--rule-2);
+  padding-top: 6px;
+}
+
+/* ── STEP LIST ── */
+.step-list { margin: 16px 0; max-width: 680px; }
+.step-item {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+.step-badge {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--gold);
+  font-family: 'DM Serif Display', serif;
+  font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.step-body {}
+.step-title { font-size: 14px; font-weight: 500; color: var(--ink); margin-bottom: 3px; }
+.step-text  { font-size: 13px; color: var(--ink-2); line-height: 1.65; }
+
+/* ── SAAS BOX ── */
+.saas-metric-box {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  margin: 16px 0;
+  max-width: 720px;
+}
+.saas-metric-card {
+  background: var(--navy-lt);
+  border: 1px solid rgba(26,46,74,0.15);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+.saas-metric-name { font-size: 11px; font-weight: 600; color: var(--navy); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .04em; }
+.saas-metric-text { font-size: 12px; color: var(--ink-2); line-height: 1.5; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  .page-wrap { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .content-section { padding: 40px 24px; }
+  .hero { padding: 40px 24px 36px; }
+  .two-col { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+
+<!-- ═══ SIDEBAR ═══ -->
+<nav class="sidebar">
+  <div class="sidebar-brand">
+    <div class="sidebar-brand-title">The Pricing Companion</div>
+    <div class="sidebar-brand-sub">Theory · Frameworks · Modules</div>
+  </div>
+  <div class="sidebar-body">
+
+    <div class="nav-section-label">Foundations</div>
+    <a class="nav-link" href="#foundations">What strategic pricing is</a>
+    <a class="nav-link" href="#value-creation">Value creation & economic value</a>
+    <a class="nav-link" href="#price-sensitivity">Price sensitivity — 9 factors</a>
+    <a class="nav-link" href="#behavioural">Behavioural pricing</a>
+
+    <div class="nav-divider"></div>
+    <div class="nav-section-label">The diagnostic modules</div>
+    <a class="nav-link" href="#m1-theory">M1 — Price waterfall<small>Pocket price & leakage</small></a>
+    <a class="nav-link" href="#m2-theory">M2 — Price band analysis<small>OLS regression & outliers</small></a>
+    <a class="nav-link" href="#m3-theory">M3 — Discount governance<small>Policy & compliance</small></a>
+    <a class="nav-link" href="#m4-theory">M4 — Margin decomposition<small>Breakeven analysis</small></a>
+
+    <div class="nav-divider"></div>
+    <div class="nav-section-label">The strategic modules</div>
+    <a class="nav-link" href="#m5-theory">M5 — Economic value<small>EVE model & positioning</small></a>
+    <a class="nav-link" href="#m6-theory">M6 — SaaS pricing studio<small>Metrics, packaging, ARR</small></a>
+    <a class="nav-link" href="#m7-theory">M7 — Competitive intelligence<small>Price war & response</small></a>
+    <a class="nav-link" href="#m8-theory">M8 — Behavioural lab<small>8-bias diagnostic</small></a>
+
+    <div class="nav-divider"></div>
+    <div class="nav-section-label">Reference</div>
+    <a class="nav-link" href="#van-westendorp">Van Westendorp PSM</a>
+    <a class="nav-link" href="#pricing-policy">Pricing policy design</a>
+    <a class="nav-link" href="#price-competition">Price competition</a>
+
+  </div>
+</nav>
+
+<!-- ═══ MAIN ═══ -->
+<main class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-eyebrow">Pricing Analyser · Theoretical companion · v1.0</div>
+  <h1 class="hero-title">The theory behind<br>the <em>numbers</em></h1>
+  <p class="hero-sub">A comprehensive guide to the pricing frameworks operationalised in the Pricing Analyser — drawn from strategic pricing theory, SaaS commercial design, and behavioural economics. Every module explained from first principles.</p>
+  <div class="hero-sources">
+    <span class="source-chip">Nagle & Müller — Strategy & Tactics of Pricing</span>
+    <span class="source-chip">Lehrskov-Schmidt — The Pricing Roadmap</span>
+    <span class="source-chip">Ariely — Predictably Irrational</span>
+  </div>
+</div>
+
+
+<!-- ══════════════════════ FOUNDATIONS ══════════════════════ -->
+<section class="content-section" id="foundations">
+  <div class="section-eyebrow">Chapter 1</div>
+  <h2 class="section-title">What strategic pricing actually is</h2>
+  <p class="section-subtitle">And why cost-plus, customer-driven, and share-driven pricing all fail on their own</p>
+
+  <p class="body-text">Most pricing decisions in practice are made backwards. A product is built, costs are tallied, a margin is added, and a price emerges. This is cost-plus pricing — and it is the dominant approach in most organisations, including most consulting engagements. It is also, as Nagle and Müller demonstrate, a consistent route to leaving money on the table.</p>
+
+  <p class="body-text">The problem with cost-plus is structural: it assumes that the price a customer is willing to pay is determined by what it cost to make the product. It isn't. A customer doesn't know your costs and doesn't care. They compare the price to the value they expect to receive — and to the alternatives available to them. A pricing strategy that ignores this comparison will systematically underprice products that deliver high value and overprice products that face strong competitive alternatives.</p>
+
+  <div class="pull-quote">
+    <div class="pull-quote-text">"The goal of strategic pricing is to price at a level that captures the value the customer receives — not the cost the seller incurs."</div>
+    <div class="pull-quote-attr">Nagle & Müller, Strategy & Tactics of Pricing</div>
+  </div>
+
+  <p class="body-text">The alternative — customer-driven pricing — fixes this by asking customers what they're willing to pay. But it creates a different failure mode: customers, when asked directly, systematically understate their willingness-to-pay. They have a rational incentive to do so. A competitor quote obtained for negotiating leverage may bear no relationship to the actual competitive market. Customer-stated WTP is a floor, not a ceiling.</p>
+
+  <p class="body-text">Share-driven pricing — pricing aggressively to capture market share — addresses none of these problems. It assumes that volume is worth sacrificing margin for, which is sometimes true and often catastrophically wrong. The breakeven volume analysis in M4 exists precisely to force this question: <em>how much additional volume do you actually need to justify a price reduction?</em> The answer is almost always more than the sales team believes.</p>
+
+  <div class="callout callout-insight">
+    <div class="callout-title">The strategic pricing framework</div>
+    <div class="callout-body">Strategic pricing coordinates five activities: <strong>value creation</strong> (building products worth more than alternatives), <strong>value communication</strong> (ensuring customers understand why they're worth more), <strong>price structure</strong> (capturing different willingness-to-pay across segments), <strong>pricing policy</strong> (governing how discounts are given and to whom), and <strong>price level</strong> (setting the number itself). The Pricing Analyser primarily addresses structure, policy, and level — the three areas where the largest and most recoverable profit opportunities typically lie.</div>
+  </div>
+
+  <h3 style="font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;margin:28px 0 10px">The Value Cascade</h3>
+  <p class="body-text">Nagle and Müller introduce the Value Cascade as the master framework of strategic pricing: an organisation creates value, communicates it, structures how it's captured, and manages the competitive environment around it. Every module in the Pricing Analyser addresses one or more stages of this cascade. The diagnostic modules (M1–M4) primarily measure how well the organisation is currently capturing the value it creates. The strategic modules (M5–M8) address how to set up the conditions for better capture going forward.</p>
+
+  <div class="concept-table">
+    <table class="concept-table">
+      <thead><tr><th>Failure mode</th><th>What it produces</th><th>Which module addresses it</th></tr></thead>
+      <tbody>
+        <tr><td>Cost-plus pricing</td><td>Prices that ignore value — leaving surplus in the customer's pocket</td><td>M5 — EVE model quantifies the gap</td></tr>
+        <tr><td>Unmanaged discounting</td><td>Price waterfall leakage — pocket price far below list</td><td>M1 — Waterfall; M3 — Governance</td></tr>
+        <tr><td>Random discounting</td><td>No relationship between discount and legitimate factors</td><td>M2 — Price band regression</td></tr>
+        <tr><td>Uninformed price changes</td><td>Volume assumptions that don't survive contact with reality</td><td>M4 — Breakeven analysis</td></tr>
+        <tr><td>Buyer psychology ignored</td><td>Pricing structures that work against the purchase decision</td><td>M8 — Behavioural audit</td></tr>
+        <tr><td>Reactive competitive pricing</td><td>Price wars, unnecessary matching, destroyed margins</td><td>M7 — Competitive framework</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+
+<!-- ══════════════════════ VALUE CREATION ══════════════════════ -->
+<section class="content-section" id="value-creation">
+  <div class="section-eyebrow">Chapter 2</div>
+  <h2 class="section-title">Economic value — the guiding force</h2>
+  <p class="section-subtitle">How to quantify what your product is actually worth to a customer, not just what it costs to build</p>
+
+  <p class="body-text">Economic value estimation (EVE) is the analytical foundation of value-based pricing. It answers a precise question: given what a customer could buy instead, what is the maximum rational price for your product? The answer is not what customers say they'll pay. It is calculated from the economics of their alternatives.</p>
+
+  <p class="body-text">The framework has two components. First, a <strong>reference price</strong> — the price the customer would pay for the best available alternative that delivers approximately the same core function. Second, <strong>differentiation value</strong> — the monetary worth of every way your product is better or worse than that alternative. The sum is the total economic value: the price at which a fully informed, rational customer would be indifferent between your product and the next-best alternative.</p>
+
+  <div class="formula-block">
+    <div class="formula-label">Economic Value Estimation — EVE formula</div>
+    <div class="formula-main">Total EV = Reference Price + Differentiation Value</div>
+    <div class="formula-gloss">
+      Reference Price = price of the next-best alternative<br>
+      Differentiation Value = Σ (monetary value of each positive and negative differentiator)<br>
+      Viable price range = [Reference Price, Total EV]
+    </div>
+  </div>
+
+  <p class="body-text">The viable price range is the range within which pricing makes rational sense. Below the reference price, the customer has no incentive to buy — they can get equivalent value cheaper. Above the total economic value, the customer would be paying more than the product is worth to them. The art of pricing strategy is selecting a point within this range that reflects competitive positioning, market share objectives, and customer segment characteristics.</p>
+
+  <h3 style="font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;margin:28px 0 10px">Estimating differentiation value</h3>
+  <p class="body-text">Nagle and Müller describe two categories of differentiation value. <strong>Monetary value</strong> — quantifiable economic benefit — includes cost savings, productivity improvements, waste reduction, or risk reduction. These are calculable from the customer's own operations. If your product saves a customer £500,000 per year in operational costs compared to the alternative, that is £500,000 of differentiation value, and your price can rationally reflect a share of that.</p>
+
+  <p class="body-text"><strong>Psychological value</strong> — harder to quantify but equally real — includes brand assurance, reduced decision-making risk, and the value of trusted relationships. In B2B markets, a trusted supplier relationship has real economic worth: it reduces the buyer's search costs, implementation risk, and internal approval overhead. This psychological value is part of the differentiation, even if it doesn't show up in a cost-savings spreadsheet.</p>
+
+  <div class="callout callout-practice">
+    <div class="callout-title">How M5 operationalises EVE</div>
+    <div class="callout-body">The EVE module in the Pricing Analyser asks you to enter a reference price and then add value driver rows — each representing one positive or negative differentiator with a monetary estimate. The module computes the total differentiation value and total economic value, then visualises the viable price range. The output is not a precise price recommendation — it is a rational framework for understanding where your price should sit and why. The sensitivity checklist then asks you to estimate how much of this value customers actually perceive, which is typically lower than the actual economic value.</div>
+  </div>
+
+  <h3 style="font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;margin:28px 0 10px">Value-based segmentation</h3>
+  <p class="body-text">Different customers extract different economic value from the same product. A large pharmaceutical company and a small startup both using the same analytics platform receive fundamentally different economic value — the pharmaceutical company's decisions involve billions in R&D investment where better analysis directly affects outcomes. The same product can rationally command a much higher price from the high-value segment.</p>
+
+  <p class="body-text">This is the economic basis for price segmentation — not price discrimination in the pejorative sense, but rational value capture: charging more where more value is received. The mechanism for doing this (good price metrics, fencing, packaging tiers) is the subject of M6 for SaaS businesses and the price structure discussion below.</p>
+</section>
+
+
+<!-- ══════════════════════ PRICE SENSITIVITY ══════════════════════ -->
+<section class="content-section" id="price-sensitivity">
+  <div class="section-eyebrow">Chapter 3</div>
+  <h2 class="section-title">Price sensitivity — nine forces that shape it</h2>
+  <p class="section-subtitle">Why identical prices feel expensive to some customers and cheap to others, and what to do about it</p>
+
+  <p class="body-text">Price sensitivity is not an innate property of a product. It is a function of the buying context, the available alternatives, the nature of the purchasing decision, and the relationship between buyer and seller. Nagle and Müller identify nine distinct effects that determine how sensitive a buyer is to price — each of which can be influenced by how a product is positioned, packaged, and communicated.</p>
+
+  <p class="body-text">The M5 sensitivity checklist in the Pricing Analyser scores each of these nine factors on a 1–5 scale and produces a composite sensitivity score. A low score means customers are likely to be relatively insensitive to price — creating latitude for increases or premium positioning. A high score means price changes will materially affect volume.</p>
+
+  <div class="numbered-list">
+    <div class="numbered-item">
+      <div class="numbered-num">1</div>
+      <div class="numbered-content">
+        <div class="numbered-title">Perceived substitutes effect</div>
+        <div class="numbered-text">Buyers are more price sensitive when they are aware of and willing to use substitutes. This is why reducing perceived substitutability — through branding, differentiation, and proprietary features — reduces price sensitivity. A monopoly supplier faces minimal substitutes sensitivity. A commodity product in a competitive market faces maximum sensitivity.</div>
+      </div>
+    </div>
+    <div class="numbered-item">
+      <div class="numbered-num">2</div>
+      <div class="numbered-content">
+        <div class="numbered-title">Unique value effect</div>
+        <div class="numbered-text">Buyers are less sensitive to price when they perceive unique attributes with no equivalent in alternatives. This is the differentiation premium — it exists only to the extent that the buyer actually perceives the differentiation. Value communication is therefore not a sales function; it is a direct driver of the price the market will accept.</div>
+      </div>
+    </div>
+    <div class="numbered-item">
+      <div class="numbered-num">3</div>
+      <div class="numbered-content">
+        <div class="numbered-title">Switching cost effect</div>
+        <div class="numbered-text">The higher the cost (in time, money, disruption, or risk) of switching to an alternative, the less sensitive buyers are to price increases from the current supplier. Enterprise software vendors invest heavily in switching costs — data migration complexity, deep integration, trained workflows — precisely because they reduce price sensitivity of the installed base.</div>
+      </div>
+    </div>
+    <div class="numbered-item">
+      <div class="numbered-num">4</div>
+      <div class="numbered-content">
+        <div class="numbered-title">Difficult comparison effect</div>
+        <div class="numbered-text">When buyers cannot easily compare the price and value of alternatives — because the features differ, the metrics differ, or the implementation context differs — they are less sensitive to price. Professional services pricing benefits strongly from this effect: it is genuinely difficult for a buyer to compare the value of two consultancies before engaging them.</div>
+      </div>
+    </div>
+    <div class="numbered-item">
+      <div class="numbered-num">5</div>
+      <div class="numbered-content">
+        <div class="numbered-title">Expenditure effect</div>
+        <div class="numbered-text">Buyers are more sensitive to the price of products that represent a large share of their total expenditure. A 10% price increase on a product that costs £500 per year feels much more significant than a 10% increase on one that costs £50,000 per year — even though the absolute amounts might not differ proportionally in importance. This is why large enterprise contracts are often less price-sensitive on a percentage basis than SMB contracts.</div>
+      </div>
+    </div>
+    <div class="numbered-item">
+      <div class="numbered-num">6</div>
+      <div class="numbered-content">
+        <div class="numbered-title">End-benefit effect</div>
+        <div class="numbered-text">The closer the product price is to the final outcome that the buyer cares about, the more sensitive they are to it. A manufacturer buying raw materials for a product with tight commodity pricing is sensitive to every input cost change. A luxury hotel buying premium amenities for its rooms is less sensitive to individual item prices because the final product's value is so much larger.</div>
+      </div>
+    </div>
+    <div class="numbered-item">
+      <div class="numbered-num">7</div>
+      <div class="numbered-content">
+        <div class="numbered-title">Shared cost effect</div>
+        <div class="numbered-text">When the buyer doesn't pay the full price — because costs are shared with a partner, reimbursed by an employer, or partially funded through tax relief — sensitivity to price is reduced. This is why the healthcare market, where most purchases are partially or fully insured, has structurally lower price sensitivity than retail consumer markets.</div>
+      </div>
+    </div>
+    <div class="numbered-item">
+      <div class="numbered-num">8</div>
+      <div class="numbered-content">
+        <div class="numbered-title">Price-quality effect</div>
+        <div class="numbered-text">In categories where buyers use price as a signal of quality — particularly where quality is difficult to observe before purchase — higher prices reduce price sensitivity by signalling higher quality. Buyers in these categories are not just paying for the product; they are paying to reduce the uncertainty about what they are getting. This connects directly to Ariely's power-of-price findings.</div>
+      </div>
+    </div>
+    <div class="numbered-item">
+      <div class="numbered-num">9</div>
+      <div class="numbered-content">
+        <div class="numbered-title">Inventory effect</div>
+        <div class="numbered-text">When buyers can stockpile a product to avoid a price increase, they are more responsive to price changes — not because the product is more valuable at a lower price, but because the savings from buying now rather than later can be realised through storage. This effect is most relevant for commodity and consumer goods where storage is practical.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════ BEHAVIOURAL ══════════════════════ -->
+<section class="content-section" id="behavioural">
+  <div class="section-eyebrow">Chapter 4</div>
+  <h2 class="section-title">Behavioural pricing — how buyers actually decide</h2>
+  <p class="section-subtitle">Ariely's experiments and what they reveal about pricing structures that work against the purchase decision</p>
+
+  <p class="body-text">Classical economics assumes that buyers evaluate prices rationally: they know what they want, know what alternatives exist, and make decisions that maximise their welfare. Dan Ariely's experimental work — conducted across hundreds of studies at MIT, Harvard, and the University of California — demonstrates that this model is systematically wrong, in ways that are not random but predictable.</p>
+
+  <p class="body-text">The insight is not that buyers are irrational in an unpredictable way. They are irrational in consistent, reproducible, well-documented ways. This predictability is commercially significant: a pricing structure designed with knowledge of these biases performs better than one designed without it. The M8 module exists to score a pricing structure against eight of the most commercially relevant of these effects.</p>
+
+  <div class="bias-grid">
+    <div class="bias-card">
+      <div class="bias-num">1</div>
+      <div class="bias-name">Arbitrary coherence (anchoring)</div>
+      <div class="bias-desc">The first price a buyer encounters becomes an anchor for evaluating all subsequent prices. Ariely demonstrated this by showing that social security numbers — completely arbitrary — influenced willingness to pay for wine, chocolates, and computer equipment when shown before a price. The first number in the sequence shapes the entire frame.</div>
+      <div class="bias-insight">Implication: the price shown before yours is at least as important as the price itself. A higher reference anchor (MSRP, previous price, premium tier) increases perceived acceptability of the primary price.</div>
+    </div>
+    <div class="bias-card">
+      <div class="bias-num">2</div>
+      <div class="bias-name">Decoy effect (asymmetric dominance)</div>
+      <div class="bias-desc">The Economist subscription experiment: offered web-only for $59 and print+web for $125, 68% chose the cheaper option. Adding print-only for $125 (a "decoy" that no one chose) shifted the majority to print+web at $125. The decoy made print+web look like the obvious, rational choice by comparison.</div>
+      <div class="bias-insight">Implication: tier structures are not just about packaging features. They create the comparison context in which buyers evaluate the primary tier. A well-placed decoy can shift the majority to the tier you want to sell.</div>
+    </div>
+    <div class="bias-card">
+      <div class="bias-num">3</div>
+      <div class="bias-name">Zero price / FREE! effect</div>
+      <div class="bias-desc">Zero is not just a low price — it is a different kind of thing entirely. Ariely showed that offering a free chocolate of lower quality versus a premium chocolate at a small discount caused the majority to choose the free option, even when the premium chocolate was the better deal by any rational calculation. FREE removes perceived risk and triggers disproportionate response.</div>
+      <div class="bias-insight">Implication: a free trial or free tier does not behave like a very cheap trial or very cheap tier. It activates a fundamentally different psychological response. The FREE! model in M6 quantifies whether this disproportionate response justifies the cost of the free offering.</div>
+    </div>
+    <div class="bias-card">
+      <div class="bias-num">4</div>
+      <div class="bias-name">Social vs market norms</div>
+      <div class="bias-desc">When Ariely asked lawyers whether they would work for a reduced rate for the elderly, many said yes. When asked whether they would work for a small fee, most said no. The introduction of money — even a small amount — switched the context from social norm (helping) to market norm (commercial transaction), and under market norms, the rate was unacceptable. Money contaminates social relationships.</div>
+      <div class="bias-insight">Implication: enterprise pricing described as "transactions" (usage meters, overages, per-call fees) activates market norms in what may be a relational context. This is particularly dangerous in long-term B2B relationships where the social norm of partnership is being cultivated.</div>
+    </div>
+    <div class="bias-card">
+      <div class="bias-num">5</div>
+      <div class="bias-name">Endowment effect (loss aversion)</div>
+      <div class="bias-desc">People value things they own more than equivalent things they don't own. Ariely's mug experiment showed that sellers consistently demanded higher prices for items they owned than buyers were willing to pay for identical items — simply because ownership had been established. Loss aversion (Kahneman: losses are felt roughly twice as strongly as equivalent gains) explains why price increases are psychologically much harder than price decreases.</div>
+      <div class="bias-insight">Implication: existing customers who have "owned" their current price will resist increases disproportionately. The grandfathering module in M6 models how to manage this transition. The endowment effect also implies that free trials work: they create ownership feelings that improve conversion.</div>
+    </div>
+    <div class="bias-card">
+      <div class="bias-num">6</div>
+      <div class="bias-name">Power of price (placebo effect)</div>
+      <div class="bias-desc">Ariely's Veladone experiment: participants experienced less pain relief from a painkiller described as costing $0.10 than from the same painkiller described as costing $2.50 — even though both were the same vitamin C tablet. Price creates expectations, and expectations shape experience. Higher prices signal higher quality and actually produce better-perceived outcomes.</div>
+      <div class="bias-insight">Implication: discount positioning reduces not just revenue but perceived product quality and outcome efficacy. In professional services, health, B2B SaaS, and any category where outcome quality matters, the cheapest option is associated with the worst outcomes — independent of actual quality differences.</div>
+    </div>
+    <div class="bias-card">
+      <div class="bias-num">7</div>
+      <div class="bias-name">Framing & expectations</div>
+      <div class="bias-desc">The same price feels different depending on what surrounds it. Ariely demonstrated that beer described before tasting was rated differently based on its label (MIT brew vs Budweiser), with the expectation created by the description materially affecting the actual tasting experience. In pricing: how a price is framed — as a saving, an investment, a daily cost, a per-unit rate — changes the evaluation.</div>
+      <div class="bias-insight">Implication: the framing comparator in M8 shows the same price in five different frames. The same monthly fee can be presented as an annual contract, a daily rate, a percentage of the benefit it delivers, or a comparison to the cost of not buying. Each frame changes the perceived value.</div>
+    </div>
+    <div class="bias-card">
+      <div class="bias-num">8</div>
+      <div class="bias-name">Option complexity & paralysis</div>
+      <div class="bias-desc">Too many choices cause buyers to avoid the decision entirely. Barry Schwartz (The Paradox of Choice) and subsequent research by Iyengar and Lepper showed that consumers presented with 24 varieties of jam were significantly less likely to purchase than those presented with 6 varieties — even though more choice should, in theory, increase the probability of finding a perfect match.</div>
+      <div class="bias-insight">Implication: each pricing tier and each add-on is a decision point. Beyond roughly 3 tiers and 2-3 add-ons, the cognitive load impairs decision-making rather than facilitating it. Simplicity is not just user-friendly — it is commercially superior in most pricing contexts.</div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════ M1 THEORY ══════════════════════ -->
+<section class="content-section" id="m1-theory">
+  <div class="module-tag">◈ Module M1 — Diagnostic</div>
+  <div class="section-eyebrow">Analytical framework</div>
+  <h2 class="section-title">The price waterfall</h2>
+  <p class="section-subtitle">How the gap between list price and pocket price is the most important number in commercial analytics — and why most organisations have never calculated it</p>
+
+  <p class="body-text">The price waterfall is one of the most powerful diagnostic tools in commercial analytics and one of the most underused. The concept is straightforward: between the list price — the price at which a product is nominally sold — and the pocket price — the price that the seller actually receives in cash after all discounts, concessions, rebates, and terms adjustments — lies a cascade of reductions, each of which costs margin and few of which are systematically managed.</p>
+
+  <p class="body-text">Nagle and Müller describe the pocket price band as the single most revealing analytical output in pricing diagnostics. The band — the range of pocket prices across all customers and transactions for a given product — reveals the true distribution of prices being received. In most organisations, this band is far wider than management believes: a product nominally sold at £100 may produce pocket prices ranging from £62 to £95 across the customer base, with no clear relationship between the pocket price and any legitimate differentiating factor.</p>
+
+  <div class="waterfall-diagram">
+    <div class="wf-label">Price waterfall — illustrative example</div>
+    <div class="wf-step">
+      <div class="wf-name">List price</div>
+      <div class="wf-bar-wrap"><div class="wf-bar" style="width:100%;background:rgba(123,116,232,0.8)">£100.00</div></div>
+    </div>
+    <div class="wf-step">
+      <div class="wf-name">− Volume discount</div>
+      <div class="wf-bar-wrap"><div class="wf-bar" style="width:8%;background:rgba(224,92,92,0.7)">£8</div></div>
+    </div>
+    <div class="wf-step">
+      <div class="wf-name">− Payment terms</div>
+      <div class="wf-bar-wrap"><div class="wf-bar" style="width:2.5%;background:rgba(224,92,92,0.6)">£2.50</div></div>
+    </div>
+    <div class="wf-step">
+      <div class="wf-name">− Rep discretionary</div>
+      <div class="wf-bar-wrap"><div class="wf-bar" style="width:5%;background:rgba(224,92,92,0.55)">£5</div></div>
+    </div>
+    <div class="wf-step">
+      <div class="wf-name">− Freight waiver</div>
+      <div class="wf-bar-wrap"><div class="wf-bar" style="width:2%;background:rgba(224,92,92,0.5)">£2</div></div>
+    </div>
+    <div class="wf-step">
+      <div class="wf-name">= Pocket price</div>
+      <div class="wf-bar-wrap"><div class="wf-bar" style="width:82.5%;background:rgba(46,196,160,0.8)">£82.50</div></div>
+    </div>
+  </div>
+
+  <p class="body-text">The waterfall becomes analytically useful when examined at the transaction level — not just as an average across the portfolio, but as a distribution. The questions that matter are: which layers are the largest sources of leakage? Are the accounts receiving the deepest discounts the accounts that justify them? And what is the total recoverable margin if the outlier discounts were brought within policy?</p>
+
+  <div class="callout callout-theory">
+    <div class="callout-title">Why rep discretionary is almost always the most important layer</div>
+    <div class="callout-body">In most B2B sales organisations, the single largest source of unmanaged leakage is rep-level discretionary discounting. Volume discounts, payment terms, and freight waivers are typically structured and at least partially policy-driven. Rep discretionary discounts are not. They are granted in the moment, under competitive pressure, with no systematic record of why they were given or whether they were necessary to win the sale. The waterfall analysis typically reveals that rep discretionary discounting varies by a factor of 3–5× across the sales force — a direct measure of the unmanaged leakage opportunity.</div>
+  </div>
+
+  <h3 style="font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;margin:28px 0 10px">How M1 computes the waterfall</h3>
+  <p class="body-text">For each transaction row, the engine steps through the configured discount layers sequentially. Each layer is a percentage of the running (post-previous-discount) price. The pocket price is the list price after all layers are applied. The engine computes the average deduction per layer across the entire dataset, the total leakage in absolute dollars, and the distribution of pocket prices — the pocket price band — as a histogram.</p>
+
+  <div class="callout callout-module">
+    <div class="callout-title">Using M1 in practice</div>
+    <div class="callout-body"><strong>What to look for:</strong> The rep discretionary layer as a proportion of total leakage. If it exceeds 30% of total leakage, there is a governance problem. <strong>Segment view:</strong> Run M1 with "segment by: sales rep" to get the rep-level leakage ranking — this is typically the most commercially important output. <strong>Floor price:</strong> Setting a floor price flags every account where the pocket price is below your economic floor (cost of goods + minimum required margin). These are the accounts destroying value, not just reducing it.</div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════ M2 THEORY ══════════════════════ -->
+<section class="content-section" id="m2-theory">
+  <div class="module-tag">◈ Module M2 — Diagnostic</div>
+  <div class="section-eyebrow">Analytical framework</div>
+  <h2 class="section-title">Price band analysis — separating legitimate from unwarranted discounting</h2>
+  <p class="section-subtitle">OLS regression as a tool for distinguishing discount that reflects real factors from discount that is simply lost margin</p>
+
+  <p class="body-text">The waterfall tells you how much is being lost. Price band analysis tells you which of that loss is justified and which is not. The distinction matters enormously: a 15% average discount across a sales force might be entirely appropriate if large-volume customers, remote regions, and lower-tier accounts systematically receive more discount for legitimate commercial reasons. The same 15% average might represent massive unmanaged leakage if it has no relationship to any of those factors.</p>
+
+  <p class="body-text">The methodology is Ordinary Least Squares regression. The target variable is the discount percentage per transaction. The predictor variables are the legitimate factors that should explain discount variation: order volume, customer tier, region, product category, contract length — whatever factors the business believes justify differentiated pricing. The regression estimates the "peer price" — the discount that a transaction would rationally receive given its characteristics — and the residual for each transaction is the unexplained component.</p>
+
+  <div class="formula-block">
+    <div class="formula-label">OLS regression — price band analysis</div>
+    <div class="formula-main">discount% = β₀ + β₁·volume + β₂·tier + β₃·region + ε</div>
+    <div class="formula-gloss">
+      β coefficients = estimated effect of each legitimate factor<br>
+      ε (residual) = unexplained discount — the unwarranted component<br>
+      R² = proportion of discount variation explained by the factors<br>
+      Outlier = residual > 1 standard deviation above fitted (over-discounted)
+    </div>
+  </div>
+
+  <div class="callout callout-insight">
+    <div class="callout-title">What the R² tells you</div>
+    <div class="callout-body">The R² of the regression is a direct measure of discount management. An R² of 0.6 or above means that 60% or more of discount variation is explained by factors that should explain it — volume, tier, region. An R² below 0.3 is a strong signal that discounting is essentially random: reps are applying discounts based on factors that are not related to the legitimate commercial characteristics of the transaction. In most B2B organisations the authors have seen, the first price band regression produces an R² of 0.1–0.25. The recoverable margin opportunity is substantial.</div>
+  </div>
+
+  <p class="body-text">Nagle and Müller discuss price band analysis extensively in the context of strategic pricing capability (Chapter 11). They describe the price band report as one of the five essential pricing analytics outputs that a mature pricing organisation maintains. The insight is that without seeing the distribution of prices actually received — not quoted, but received — management has no ability to identify where margin is leaking or where the policy is being circumvented.</p>
+
+  <h3 style="font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;margin:28px 0 10px">Quantifying recoverable margin</h3>
+  <p class="body-text">For each over-discounted transaction (residual greater than one standard deviation), the excess discount — the difference between the actual discount and the fitted peer price — represents margin that was given away without justification. Aggregated across all outlier transactions, this is the recoverable margin: the amount that could theoretically be recaptured by bringing outlier accounts back within the price band.</p>
+
+  <p class="body-text">The recoverable margin calculation is inherently conservative: it assumes that outlier accounts would accept the peer price without churning, which many would not. The practical recoverable margin is some fraction of this theoretical figure — typically 40–60% of the total, depending on account sensitivity and competitive dynamics. Even at 40%, the recoverable margin from a single price band analysis on a mid-sized B2B sales force is often in the millions.</p>
+</section>
+
+
+<!-- ══════════════════════ M3 THEORY ══════════════════════ -->
+<section class="content-section" id="m3-theory">
+  <div class="module-tag">◈ Module M3 — Diagnostic</div>
+  <div class="section-eyebrow">Analytical framework</div>
+  <h2 class="section-title">Discount governance — pricing policy as competitive advantage</h2>
+  <p class="section-subtitle">Why the absence of pricing policy is itself a policy — and an expensive one</p>
+
+  <p class="body-text">The most extensive treatment of pricing policy in Nagle and Müller is Chapter 5, and its central argument deserves careful attention: pricing policy is not bureaucracy. It is competitive advantage. An organisation with well-designed, consistently enforced pricing policies sells more at better margins than an equivalent organisation without them. The mechanism is not intuitive but is well documented.</p>
+
+  <p class="body-text">When an organisation has no pricing policy — when discounts are granted ad hoc, on request, based on each rep's judgement — buyers learn this quickly. The learning is asymmetric: the sales rep rarely knows what discounts were given to other customers. The buyer often does. The result is a systematic erosion of price integrity: the belief, on the part of the buyer, that the quoted price is a real market price rather than an opening bid.</p>
+
+  <div class="pull-quote">
+    <div class="pull-quote-text">"Every concession made without a clear policy rationale teaches buyers that the way to get a better price is to object more aggressively. The company that makes exceptions trains its customers to demand them."</div>
+    <div class="pull-quote-attr">Nagle & Müller, Chapter 5 — Pricing Policy</div>
+  </div>
+
+  <p class="body-text">The virtuous cycle works in reverse: organisations with clear, consistently enforced pricing policies find that buyers stop testing them. Once the expectation is established that there are no exceptions, the cost of attempting to extract one (time, relationship capital, negotiation effort) exceeds the expected benefit. The sales cycle shortens. The average discount narrows. The organisation captures more of the value it creates.</p>
+
+  <h3 style="font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;margin:28px 0 10px">Four types of problematic discounting</h3>
+  <p class="body-text">Nagle and Müller identify four specific scenarios where discounting causes the most systematic damage, each requiring a specific policy response:</p>
+
+  <div class="numbered-list">
+    <div class="numbered-item">
+      <div class="numbered-num">1</div>
+      <div class="numbered-content">
+        <div class="numbered-title">Discounting to compensate for competitive threat</div>
+        <div class="numbered-text">The buyer presents a competitor quote (real or fabricated) and requests a match. The correct response is not automatic matching, but a structured give-get negotiation: match the price only if the buyer gives something of value in return (volume commitment, payment terms change, reduced service scope). Matching without a give-get teaches buyers to generate competitive quotes as a negotiating tactic.</div>
+      </div>
+    </div>
+    <div class="numbered-item">
+      <div class="numbered-num">2</div>
+      <div class="numbered-content">
+        <div class="numbered-title">Volume-based discounting on total spend</div>
+        <div class="numbered-text">Offering a percentage discount on total volume, including already-won volume, creates a perverse incentive structure. A 2% discount on £11,000 of total spend (for a buyer who was going to buy £10,000 anyway) is actually a 22% discount on the incremental £1,000 of new volume. The correct policy is to discount only on the incremental volume, delivered as a rebate at year-end, which also protects against buyers who promise volume but never deliver it.</div>
+      </div>
+    </div>
+    <div class="numbered-item">
+      <div class="numbered-num">3</div>
+      <div class="numbered-content">
+        <div class="numbered-title">Discounting to compensate for past failures</div>
+        <div class="numbered-text">When a seller fails to deliver on commitments, buyers reasonably expect compensation. The problem is when that compensation takes the form of a price reduction, which becomes the baseline for all future negotiations. The correct policy is to compensate through a one-time payment or invoice credit that expires — preserving the price integrity for future periods.</div>
+      </div>
+    </div>
+    <div class="numbered-item">
+      <div class="numbered-num">4</div>
+      <div class="numbered-content">
+        <div class="numbered-title">Discounting under strategic sourcing pressure</div>
+        <div class="numbered-text">Sophisticated procurement departments use consolidated buying, reverse auctions, and manufactured competition to extract price concessions. The correct response is pre-approved value trade-offs: the rep can offer service tier reductions, contract modifications, or volume commitments — but not simply lower the price without something in return. This requires that management has designed and communicated these trade-offs in advance.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-module">
+    <div class="callout-title">Using M3 in practice</div>
+    <div class="callout-body">Configure policy rules by customer dimension (tier, region, product). The default max discount per dimension defines what the policy allows. The compliance rate is the headline metric for the CFO — it tells you what percentage of transactions are within policy. The violation heatmap (rep × product) identifies which reps are consistently outside policy in which categories — these are the conversations that need to happen. Critical violations (>1.5× policy maximum) are the escalation list.</div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════ M4 THEORY ══════════════════════ -->
+<section class="content-section" id="m4-theory">
+  <div class="module-tag">◈ Module M4 — Diagnostic</div>
+  <div class="section-eyebrow">Analytical framework</div>
+  <h2 class="section-title">Margin decomposition — breakeven analysis</h2>
+  <p class="section-subtitle">The single calculation that should precede every pricing decision — and almost never does</p>
+
+  <p class="body-text">The breakeven sales change formula is one of the most important tools in commercial analytics and one of the most consistently underused. Before any price change — an increase, a promotional reduction, a competitive response — the first question should be: what volume change does this require to maintain profitability? The answer is almost always more than the proponent of the change assumes.</p>
+
+  <p class="body-text">The formula, derived by Nagle and Müller in the financial analysis chapter, is algebraically simple but analytically powerful. It takes the proposed price change, the current contribution margin, and computes the breakeven volume change — the percentage by which sales must increase (for a price cut) or decrease (for a price increase) before profitability returns to its pre-change level.</p>
+
+  <div class="formula-block">
+    <div class="formula-label">Nagle & Müller breakeven formula — Appendix 9B derivation</div>
+    <div class="formula-main">Breakeven % = −ΔP ÷ (CM + ΔP)</div>
+    <div class="formula-gloss">
+      ΔP = price change in absolute dollars (negative for a cut)<br>
+      CM = contribution margin per unit = price − variable cost<br>
+      Result = required % volume change to maintain contribution<br><br>
+      Example: 5% price cut, CM% = 40% → need 14.3% volume increase<br>
+      Example: 10% price increase, CM% = 40% → can absorb 20% volume decline
+    </div>
+  </div>
+
+  <p class="body-text">The insight embedded in this formula is profound and counterintuitive: as the contribution margin decreases (as occurs when a company competes on price), the required volume increase to justify a further price cut increases sharply. A product with a 60% contribution margin needs only a 9% volume increase to justify a 5% price cut. The same 5% price cut on a product with a 20% contribution margin requires a 33% volume increase. The lower the margin, the harder it is to make price cuts work — and the more organisations in margin-competitive markets keep trying.</p>
+
+  <div class="callout callout-warning">
+    <div class="callout-title">The cost of cost-plus thinking in breakeven analysis</div>
+    <div class="callout-body">The most common error in breakeven analysis is using total cost per unit rather than variable cost per unit to compute the contribution margin. Fixed costs do not change with volume (within relevant range) and therefore have no bearing on whether an incremental price change is profitable. Using full cost in the breakeven formula overstates the breakeven volume required and leads organisations to reject price reductions that would in fact be profitable — or to accept price increases that destroy volume without compensation.</div>
+  </div>
+
+  <h3 style="font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;margin:28px 0 10px">The 9-scenario table</h3>
+  <p class="body-text">The breakeven calculation gives a single number — the volume change required to break even. The 9-scenario table in M4 extends this to show the profit impact across a range of volume outcomes, from −40% to +40% relative to current volume. This is the complete decision framework: not "will this price change break even?" but "what is the profit outcome at each plausible volume scenario, and which scenario do I believe the market will deliver?"</p>
+
+  <p class="body-text">The breakeven row in the scenario table — highlighted in the tool — is where the profit delta crosses zero. Every scenario above this row (higher volume than breakeven) is a profitable price cut. Every scenario below it is a value-destructive one. The question for management is whether the volume scenario they are implicitly assuming is above or below the breakeven line — and what evidence supports that assumption.</p>
+</section>
+
+
+<!-- ══════════════════════ M5 THEORY ══════════════════════ -->
+<section class="content-section" id="m5-theory">
+  <div class="module-tag">◈ Module M5 — Strategic</div>
+  <div class="section-eyebrow">Analytical framework</div>
+  <h2 class="section-title">Economic value & strategic positioning</h2>
+  <p class="section-subtitle">From the EVE model to skim, penetrate, or neutral — three fundamentally different strategies with different preconditions</p>
+
+  <p class="body-text">The EVE model (covered in the foundations section) establishes a viable price range. The strategic positioning decision — where within that range to price — is a separate, consequential choice. Nagle and Müller present three generic pricing strategies: skim, penetrate, and neutral. Each is rational under specific market conditions and irrational under others. M5 scores a set of market conditions to identify which strategy the evidence supports.</p>
+
+  <div class="concept-table">
+    <table class="concept-table">
+      <thead><tr><th>Strategy</th><th>Price level</th><th>Conditions required</th><th>Risk if conditions absent</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Skim</td>
+          <td>Near EVE ceiling — capturing maximum value from early adopters and low-sensitivity segments</td>
+          <td>Strong differentiation, competitive protection, low price sensitivity, high switching costs</td>
+          <td>Rapid share loss to lower-priced entrants; invites competitive entry if margins are visible</td>
+        </tr>
+        <tr>
+          <td>Penetrate</td>
+          <td>Near reference price floor — trading margin for volume and market position</td>
+          <td>High price sensitivity, weak competitive protection, strong learning curve / unit cost reduction, large addressable market</td>
+          <td>Margin destruction without volume response; triggers retaliation from established players</td>
+        </tr>
+        <tr>
+          <td>Neutral</td>
+          <td>At or near perceived economic value — neither sacrificing margin nor provoking competitive response</td>
+          <td>Mixed or moderate conditions; no strong signal in either direction</td>
+          <td>Leaves some margin on the table for high-WTP segments; less attractive than alternatives in polarised markets</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;margin:28px 0 10px">The anchor simulator — Ariely's arbitrary coherence in practice</h3>
+  <p class="body-text">Ariely's Chapter 2 documents the anchor effect with clinical precision. Social security numbers — arbitrary and irrelevant — materially shifted what participants were willing to pay for wine, chocolates, and computer equipment when shown before the price. The first number in a sequence becomes the anchor from which all subsequent evaluations are adjusted. Crucially, adjustments from anchors are almost always insufficient — buyers move from the anchor but not far enough.</p>
+
+  <p class="body-text">The five anchor types in M5 reflect documented shifts in willingness-to-pay from experimental and field research. A previous higher price shown before the current price (the "crossed-out original price" model) shifts WTP upward by approximately 12%. A low competitor price shown first suppresses WTP by approximately 9%. The direction and magnitude vary by context, but the direction is predictable and the size is commercially significant.</p>
+
+  <div class="callout callout-practice">
+    <div class="callout-title">The most important anchor in B2B pricing</div>
+    <div class="callout-body">In B2B sales, the most powerful and most neglected anchor is the cost of the alternative — not the competitor's price, but the total cost of the next-best solution including implementation, transition, and opportunity cost. A £200,000 annual SaaS contract feels very different when the alternative is a £1.5M internal IT development project with £250,000 per year in maintenance. Presenting this economic comparison before quoting your price is not manipulation — it is accurate context-setting that allows buyers to evaluate the price rationally.</div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════ M6 THEORY ══════════════════════ -->
+<section class="content-section" id="m6-theory">
+  <div class="module-tag">◈ Module M6 — Strategic</div>
+  <div class="section-eyebrow">Analytical framework</div>
+  <h2 class="section-title">SaaS pricing — metrics, packaging, and the wallet structure</h2>
+  <p class="section-subtitle">Why SaaS pricing is a design problem, not a spreadsheet problem — and the frameworks to design it well</p>
+
+  <p class="body-text">Ulrik Lehrskov-Schmidt's central thesis in The Pricing Roadmap is that SaaS pricing is fundamentally different from traditional product pricing, and that most SaaS companies price badly because they treat it as an optimisation problem (what price maximises revenue?) when it is actually a design problem (what pricing model aligns how we charge with how customers receive value?).</p>
+
+  <p class="body-text">The distinction is important. An optimisation mindset produces a single price for a single product and then tries to find the right number. A design mindset produces a pricing model — the mechanism that determines what a customer pays based on what they buy, how much they use, and who they are — and then finds the numbers that fit that model. The model is more consequential than the number.</p>
+
+  <h3 style="font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;margin:28px 0 10px">What makes a good pricing metric</h3>
+  <p class="body-text">The pricing metric is the unit the customer pays for: per seat, per API call, per GB of storage, per active user, per transaction. Lehrskov-Schmidt argues that the right metric has four properties:</p>
+
+  <div class="saas-metric-box">
+    <div class="saas-metric-card">
+      <div class="saas-metric-name">Operational viability</div>
+      <div class="saas-metric-text">Can you measure it, bill for it, and explain it to a customer without a three-page explanation?</div>
+    </div>
+    <div class="saas-metric-card">
+      <div class="saas-metric-name">Demand correlation</div>
+      <div class="saas-metric-text">Does usage of this metric grow proportionally with the value the customer receives? High correlation = aligned incentives.</div>
+    </div>
+    <div class="saas-metric-card">
+      <div class="saas-metric-name">Expectation to pay</div>
+      <div class="saas-metric-text">Do customers already expect to pay for this unit of consumption? Industry norms reduce buyer resistance.</div>
+    </div>
+    <div class="saas-metric-card">
+      <div class="saas-metric-name">Metric density</div>
+      <div class="saas-metric-text">Is value relatively uniform across units? Low density (power-law value distribution) creates billing unpredictability.</div>
+    </div>
+  </div>
+
+  <h3 style="font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;margin:28px 0 10px">Wallet structuring</h3>
+  <p class="body-text">One of Lehrskov-Schmidt's most commercially actionable concepts is wallet structuring: designing a pricing model that targets multiple discrete budgets within a customer organisation. In most enterprise organisations, software purchases can be funded from IT budgets, business unit budgets, operational budgets, or capital expenditure budgets. Each budget has a different owner, approval process, and sensitivity.</p>
+
+  <p class="body-text">A flat annual subscription typically comes from one budget and involves one buyer. A platform fee plus usage charges plus professional services can legitimately be funded from three different budgets with three different decision-makers. Each is a smaller number that requires a simpler approval. The total annual spend may be higher than a flat subscription, but the purchasing friction is lower because no single number requires unusual approval.</p>
+
+  <h3 style="font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;margin:28px 0 10px">Van Westendorp Price Sensitivity Meter</h3>
+  <p class="body-text">The Van Westendorp PSM asks four questions of buyers or internal stakeholders. Each question maps a different threshold in the buyer's price perception:</p>
+
+  <div class="concept-table">
+    <table class="concept-table">
+      <thead><tr><th>Question</th><th>Threshold identified</th><th>Curve in the PSM</th></tr></thead>
+      <tbody>
+        <tr><td>"At what price is this too cheap to trust?"</td><td>Lower bound of quality signal</td><td>Too cheap — rises from left</td></tr>
+        <tr><td>"At what price is this starting to feel like a bargain?"</td><td>Lower bound of acceptable range</td><td>Cheap/bargain — rises from left</td></tr>
+        <tr><td>"At what price is this starting to feel expensive?"</td><td>Upper bound of acceptable range</td><td>Expensive — rises from right</td></tr>
+        <tr><td>"At what price is this too expensive to consider?"</td><td>Absolute ceiling</td><td>Too expensive — rises from right</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="body-text">The four curves produce three critical intersection points. The Point of Marginal Cheapness (PMC) — where Too Cheap crosses Expensive — is the lower bound of the rational price range. The Point of Marginal Expensiveness (PME) — where Cheap crosses Too Expensive — is the upper bound. The Optimal Price Point (OPP) — where Too Cheap crosses Too Expensive — is typically the price at which buyers are most evenly distributed around the acceptable range.</p>
+
+  <h3 style="font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;margin:28px 0 10px">Raising prices — the grandfathering decision</h3>
+  <p class="body-text">Lehrskov-Schmidt devotes a full chapter to price increases, observing that most SaaS companies are underpriced relative to the value they deliver — and that the barrier to correcting this is almost entirely psychological, not commercial. The fear of churn from a price increase consistently exceeds the actual churn from a price increase, in part because existing customers have established the endowment effect Ariely describes: they have "owned" their current price and will resist change.</p>
+
+  <p class="body-text">The grandfathering decision — protecting existing customers from immediate price increases — trades short-term revenue for long-term retention and trust. The grandfathering planner in M6 models the MRR transition over the notice period: as grandfathered customers eventually transition to the new price (or churn), and new customers onboard at the new rate, the MRR trajectory reflects the net effect. The analysis reveals whether grandfathering improves or reduces the total ARR outcome versus an immediate across-the-board increase.</p>
+</section>
+
+
+<!-- ══════════════════════ M7 THEORY ══════════════════════ -->
+<section class="content-section" id="m7-theory">
+  <div class="module-tag">◈ Module M7 — Strategic</div>
+  <div class="section-eyebrow">Analytical framework</div>
+  <h2 class="section-title">Competitive price intelligence — thinking before reacting</h2>
+  <p class="section-subtitle">How price wars start, how they end, and the structured framework for deciding whether to respond to a competitor move</p>
+
+  <p class="body-text">Nagle and Müller open Chapter 7 — Price Competition — with a quote from Sun Tzu: "Every battle is won before it is ever fought." In pricing competition, this translates to a discipline: before responding to any competitor price move, understand what drove it, whether it is sustainable, and what the cost of different responses actually is. Reactive, instinctive matching is almost always the wrong answer — not because it is always unprofitable, but because it is made without the analysis that would reveal whether it is profitable.</p>
+
+  <h3 style="font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;margin:28px 0 10px">The price war trap</h3>
+  <p class="body-text">Price wars typically start with a rational-seeming decision by one competitor — usually an aggressive price cut to gain share in a market where volume is stagnating. The decision is rational from that competitor's perspective in the moment. But it triggers a response from competitors that is also rational in the moment — matching the cut to prevent share loss. The spiral produces a market where all players are worse off, none has gained sustainable share, and the only beneficiary is the customer.</p>
+
+  <p class="body-text">The conditions that predispose markets to price wars are well documented: excess capacity (competitors have strong incentives to fill capacity at marginal cost), high fixed-cost ratios (the incremental cost of additional volume is low), commodity products (limited differentiation to protect against price competition), and high strategic stakes (competitors will absorb short-term losses to protect a core market). The war risk assessor in M7 scores these conditions to produce a retaliation probability estimate.</p>
+
+  <div class="callout callout-warning">
+    <div class="callout-title">The match vs hold calculation — what most companies get wrong</div>
+    <div class="callout-body">The instinctive response to a competitor price cut is to match it, to prevent volume loss. The correct analysis is the match vs hold calculation: compare the contribution impact of matching (lower margin × retained volume) with the contribution impact of not matching (full margin × reduced volume). For most products with reasonable contribution margins and moderate price sensitivity, holding price is the superior financial outcome unless the volume loss exceeds a specific breakeven threshold — which is almost always higher than the sales team estimates.</div>
+  </div>
+
+  <h3 style="font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;margin:28px 0 10px">Diagnosing the competitor move</h3>
+  <p class="body-text">Nagle and Müller argue that the most important first step in responding to a competitor price move is diagnosing its motivation. A price cut driven by excess capacity is likely temporary — the competitor will return to normal pricing once capacity is absorbed. A price cut driven by financial distress may be desperate — the competitor is sacrificing margin to maintain cash flow, and matching it simply helps them stay in the market longer. A price cut driven by a genuine cost advantage or a new lower-cost business model requires a fundamentally different response than either of the above.</p>
+
+  <p class="body-text">The response framework in M7 maps competitor move type × customer sensitivity to a recommended response. The matrix captures the core insight: the correct response to a competitor move depends more on the motive and sustainability of the move than on its immediate price impact.</p>
+</section>
+
+
+<!-- ══════════════════════ M8 THEORY ══════════════════════ -->
+<section class="content-section" id="m8-theory">
+  <div class="module-tag">◈ Module M8 — Strategic</div>
+  <div class="section-eyebrow">Analytical framework</div>
+  <h2 class="section-title">The behavioural pricing lab — stress-testing a structure</h2>
+  <p class="section-subtitle">How to identify whether your pricing architecture works with buyer psychology or against it</p>
+
+  <p class="body-text">The eight biases described in the foundations section manifest in specific, testable ways in any pricing structure. The M8 module systematises this test: given a set of inputs about a pricing structure and its commercial context, it scores each bias and produces an overall risk assessment. The goal is not to exploit buyers — it is to ensure that the pricing structure does not inadvertently create conditions that work against the purchase decision.</p>
+
+  <p class="body-text">The distinction is important. A pricing structure that has no decoy tier leaves money on the table because buyers, without a comparison point, default to the cheaper option. This is not a buyer advantage — it is simply an incomplete pricing design. A structure with heavy option complexity slows conversion and increases customer service costs. These are commercial problems with commercial solutions, and the bias audit surfaces them before the structure is deployed.</p>
+
+  <h3 style="font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;margin:28px 0 10px">The five frames — framing comparator</h3>
+  <p class="body-text">Ariely's work on framing and expectations (Chapter 9) shows that the description accompanying a price materially affects the experience associated with it. In pricing terms: the same monthly fee can be presented in at least five different frames, each of which activates different cognitive processes in the buyer and produces different perceived value.</p>
+
+  <div class="concept-table">
+    <table class="concept-table">
+      <thead><tr><th>Frame type</th><th>Example (£149/month)</th><th>Psychological effect</th></tr></thead>
+      <tbody>
+        <tr><td>Absolute price</td><td>£149 per month</td><td>Neutral — evaluated against prior experience and anchors in the buyer's memory</td></tr>
+        <tr><td>Daily rate</td><td>£4.97 per day</td><td>Disaggregation makes the number feel trivially small; same effect as "just a cup of coffee"</td></tr>
+        <tr><td>Saving vs tier above</td><td>44% less than Enterprise</td><td>Anchor to the more expensive option; current price feels like exceptional value by comparison</td></tr>
+        <tr><td>Investment vs cost avoided</td><td>Less than one lost deal per quarter</td><td>Reframes cost as opportunity; activates loss aversion in the buyer's favour</td></tr>
+        <tr><td>Competitive comparison</td><td>Same as Competitor at £149 — with feature X included</td><td>Positions your price as equivalently priced but better value; anchors to known reference</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="body-text">None of these frames changes the price. All of them change the evaluation of the price. The framing comparator in M8 renders all five frames side by side for the entered price, so that the best frame for the specific commercial context can be selected consciously rather than defaulted to.</p>
+</section>
+
+
+<!-- ══════════════════════ VAN WESTENDORP ══════════════════════ -->
+<section class="content-section" id="van-westendorp">
+  <div class="section-eyebrow">Reference</div>
+  <h2 class="section-title">Van Westendorp PSM — methodology and interpretation</h2>
+  <p class="section-subtitle">The four-question survey, the four curves, and the three critical intersection points</p>
+
+  <p class="body-text">The Van Westendorp Price Sensitivity Meter was developed by Dutch economist Peter van Westendorp in 1976 and remains one of the most widely used tools for estimating acceptable price ranges. Its strength is that it captures buyer psychology around price in a way that direct willingness-to-pay questions do not: rather than asking buyers what they would pay, it asks them to identify price thresholds, which are psychologically more accessible and less subject to strategic misrepresentation.</p>
+
+  <div class="step-list">
+    <div class="step-item">
+      <div class="step-badge">1</div>
+      <div class="step-body">
+        <div class="step-title">Collect responses to four questions</div>
+        <div class="step-text">For a sample of buyers or internal stakeholders: (1) At what price is this too cheap to trust? (2) At what price is this a bargain? (3) At what price is it getting expensive? (4) At what price is it too expensive? Each respondent provides a price for each question.</div>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-badge">2</div>
+      <div class="step-body">
+        <div class="step-title">Build cumulative distribution curves</div>
+        <div class="step-text">For Too Cheap and Cheap/Bargain: cumulative from the right (what percentage say this price is too cheap/a bargain?). For Expensive and Too Expensive: cumulative from the left (what percentage say this price is expensive/too expensive?). Each curve runs from 0% to 100% across the price range.</div>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-badge">3</div>
+      <div class="step-body">
+        <div class="step-title">Find intersection points</div>
+        <div class="step-text">PMC (Point of Marginal Cheapness): where Too Cheap crosses Expensive — price floor below which quality doubt undermines sales. PME (Point of Marginal Expensiveness): where Cheap crosses Too Expensive — price ceiling above which majority resistance begins. OPP (Optimal Price Point): where Too Cheap crosses Too Expensive — the price with the most balanced buyer distribution.</div>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-badge">4</div>
+      <div class="step-body">
+        <div class="step-title">Interpret the acceptable range</div>
+        <div class="step-text">The PMC–PME range is the acceptable price range: prices within it face neither quality-perception problems (too cheap) nor majority resistance (too expensive). The OPP within this range is the statistically optimal starting point for price setting. The actual chosen price reflects strategic positioning — skim targets the PME, penetrate targets the PMC, neutral targets the OPP.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-insight">
+    <div class="callout-title">Limitations and appropriate use</div>
+    <div class="callout-body">The Van Westendorp PSM is a stated preference tool — it relies on respondents correctly identifying their own price thresholds, which they often cannot do precisely in advance of actual purchase decisions. It is most reliable for products with relatively transparent value and few substitutes. For complex B2B products with multiple value components, it should be supplemented with conjoint analysis or economic value estimation. In the Pricing Analyser, the PSM is most useful for SaaS products with clear feature sets and direct competitive alternatives — particularly for setting initial price points on new product tiers.</div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════ PRICING POLICY ══════════════════════ -->
+<section class="content-section" id="pricing-policy">
+  <div class="section-eyebrow">Reference</div>
+  <h2 class="section-title">Designing pricing policy — a practical framework</h2>
+  <p class="section-subtitle">From ad hoc negotiation to policy-based pricing — the steps and the sequencing</p>
+
+  <p class="body-text">Nagle and Müller describe the transition from ad hoc to policy-based pricing as one of the highest-leverage changes an organisation can make — and one of the hardest, because it requires changing the behaviour of the sales force, which has strong short-term incentives to maintain flexibility. The following framework, drawn from Chapter 5 and the strategic pricing capability chapter, outlines the practical sequence.</p>
+
+  <div class="numbered-list">
+    <div class="numbered-item">
+      <div class="numbered-num">1</div>
+      <div class="numbered-content">
+        <div class="numbered-title">Audit current discounting patterns</div>
+        <div class="numbered-text">Run M1 (waterfall) and M2 (price band regression) to understand the current state. What is the average pocket price relative to list? How much does it vary? Is variation explained by legitimate factors or not? This audit is the baseline — the "before" against which policy improvements will be measured.</div>
+      </div>
+    </div>
+    <div class="numbered-item">
+      <div class="numbered-num">2</div>
+      <div class="numbered-content">
+        <div class="numbered-title">Define policy rules by customer dimension</div>
+        <div class="numbered-text">For each legitimate differentiating dimension (customer tier, order volume, region, contract length), define a maximum discount threshold. Thresholds should reflect the economic reality of the differentiation — a Gold-tier customer with a 3-year contract genuinely receives lower cost-to-serve and warrants a lower price; this is not a concession, it is a price structure.</div>
+      </div>
+    </div>
+    <div class="numbered-item">
+      <div class="numbered-num">3</div>
+      <div class="numbered-content">
+        <div class="numbered-title">Design pre-approved value trade-offs</div>
+        <div class="numbered-text">For every concession a rep might make, define what the rep receives in return. Volume commitment. Shorter payment terms. Reduction in service scope. Expanded product access. The principle is that no concession is made without a give-get — not because it is always economically necessary, but because it establishes the expectation that concessions have costs, which reduces the frequency with which they are requested.</div>
+      </div>
+    </div>
+    <div class="numbered-item">
+      <div class="numbered-num">4</div>
+      <div class="numbered-content">
+        <div class="numbered-title">Establish approval thresholds and escalation paths</div>
+        <div class="numbered-text">Discounts within policy should be at rep level — no approval required. Discounts above policy require manager approval. Discounts above the critical threshold require commercial director or pricing team review. The approval threshold structure defines the governance without creating bureaucratic friction for normal transactions.</div>
+      </div>
+    </div>
+    <div class="numbered-item">
+      <div class="numbered-num">5</div>
+      <div class="numbered-content">
+        <div class="numbered-title">Monitor, report, and iterate</div>
+        <div class="numbered-text">Run M3 (governance dashboard) monthly. Track compliance rate, total excess discount, and violation distribution by rep and product. The monthly governance review is the operational mechanism by which policy is maintained. As the organisation's pricing sophistication increases, policy thresholds can be refined to reflect learned patterns in what discounting actually drives volume versus what discounting is simply captured by buyers.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════ PRICE COMPETITION ══════════════════════ -->
+<section class="content-section" id="price-competition">
+  <div class="section-eyebrow">Reference</div>
+  <h2 class="section-title">Price competition — the decision framework</h2>
+  <p class="section-subtitle">A structured approach to competitive pricing decisions: when to fight, when to hold, and when to ignore</p>
+
+  <p class="body-text">The core insight in Nagle and Müller's treatment of price competition is that price wars are almost always lose-lose — and almost always avoidable if the decision to respond is made analytically rather than reactively. The decision framework below synthesises Chapter 7 into a practical sequence for any competitive pricing decision.</p>
+
+  <div class="two-col">
+    <div class="col-card">
+      <div class="col-card-label" style="color:var(--teal)">Questions to ask first</div>
+      <div class="col-card-item"><span>→</span> What is the competitor's probable motivation? Share grab? Distress? New cost model?</div>
+      <div class="col-card-item"><span>→</span> Is this move sustainable? Can the competitor maintain this price profitably?</div>
+      <div class="col-card-item"><span>→</span> Which of our customers are actually at risk? Price-sensitive segments or all segments?</div>
+      <div class="col-card-item"><span>→</span> What does the match vs hold calculation show at our actual volume loss estimate?</div>
+      <div class="col-card-item"><span>→</span> What is the war risk score? Will matching trigger a further cut?</div>
+    </div>
+    <div class="col-card">
+      <div class="col-card-label" style="color:var(--red)">Common mistakes</div>
+      <div class="col-card-item"><span>✕</span> Matching immediately without calculating the contribution impact</div>
+      <div class="col-card-item"><span>✕</span> Treating a segment-specific cut as a market-wide threat</div>
+      <div class="col-card-item"><span>✕</span> Responding to promotional pricing as if it were structural pricing</div>
+      <div class="col-card-item"><span>✕</span> Allowing the sales force to use competitor activity as leverage for permanent discounts</div>
+      <div class="col-card-item"><span>✕</span> Fighting for price-sensitive accounts at the cost of margin with loyal accounts</div>
+    </div>
+  </div>
+
+  <p class="body-text">Nagle and Müller's most important observation about price competition is the asymmetry of information: the buyer always knows what price they were given and has an incentive to understate the competitor's price in negotiations. The seller almost never has reliable information about what competitors are actually charging comparable customers. This asymmetry means that competitive intelligence gathered through sales conversations is systematically biased downward — competitors appear to be pricing lower than they are, and the temptation to respond is consistently overstated.</p>
+
+  <div class="callout callout-insight">
+    <div class="callout-title">When competing on price is appropriate</div>
+    <div class="callout-body">Nagle and Müller's Chapter 7 provides a clear answer: price competition is rational when (1) you have a sustainable cost advantage that competitors cannot match; (2) the market has strong network effects that reward the largest player; (3) the product is genuinely undifferentiated and the market has clearly decided it is a commodity; or (4) you are using price as a short-term tool to deny a new entrant the volume it needs to achieve scale. In all other cases — the vast majority — price competition destroys value for all players. The question to ask is not "should we match?" but "will matching actually achieve what we want, at a cost we can afford?"</div>
+  </div>
+
+</section>
+
+</main>
+</div>
+
+<script>
+// Sidebar scroll tracking
+const sections = document.querySelectorAll('.content-section, .hero');
+const navLinks = document.querySelectorAll('.nav-link');
+
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.id;
+      navLinks.forEach(l => {
+        l.classList.remove('active');
+        if (l.getAttribute('href') === '#' + id) l.classList.add('active');
+      });
+    }
+  });
+}, { threshold: 0.3 });
+
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
