@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build Journal — Pricing Analyser</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap');
+
+:root {
+  --ink:       #1A1814;
+  --ink-2:     #4A4740;
+  --ink-3:     #8A8680;
+  --paper:     #F7F5F0;
+  --paper-2:   #EFEDE8;
+  --paper-3:   #E5E2DA;
+  --rule:      rgba(26,24,20,0.10);
+  --rule-2:    rgba(26,24,20,0.06);
+  --purple:    #534AB7;
+  --purple-lt: #EEEDFE;
+  --purple-dk: #26215C;
+  --teal:      #0F6E56;
+  --teal-lt:   #E1F5EE;
+  --amber:     #854F0B;
+  --amber-lt:  #FAEEDA;
+  --red:       #A32D2D;
+  --red-lt:    #FCEBEB;
+  --blue:      #185FA5;
+  --blue-lt:   #E6F1FB;
+  --rust:      #993C1D;
+  --rust-lt:   #FAECE7;
+  --green:     #27500A;
+  --green-lt:  #EAF3DE;
+  --accent:    #C8A96E;
+  --done-bg:   #EAF3DE;
+  --done-tx:   #27500A;
+  --now-bg:    #E6F1FB;
+  --now-tx:    #0C447C;
+  --todo-bg:   #EFEDE8;
+  --todo-tx:   #8A8680;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ── HEADER ── */
+.site-header {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 48px 40px 40px;
+  position: relative;
+  overflow: hidden;
+}
+.site-header::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 320px; height: 320px;
+  border-radius: 50%;
+  border: 1px solid rgba(200,169,110,0.15);
+}
+.site-header::after {
+  content: '';
+  position: absolute;
+  bottom: -40px; left: 120px;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  border: 1px solid rgba(200,169,110,0.08);
+}
+.header-eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 14px;
+}
+.header-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(28px, 5vw, 46px);
+  font-weight: 400;
+  line-height: 1.15;
+  margin-bottom: 16px;
+  max-width: 680px;
+}
+.header-title em {
+  font-style: italic;
+  color: var(--accent);
+}
+.header-desc {
+  font-size: 14px;
+  color: rgba(247,245,240,0.65);
+  max-width: 560px;
+  line-height: 1.75;
+  margin-bottom: 28px;
+}
+.header-meta {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.header-meta-item {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: .06em;
+  color: rgba(247,245,240,0.45);
+  text-transform: uppercase;
+}
+.header-meta-item span {
+  color: rgba(247,245,240,0.8);
+  margin-left: 6px;
+}
+
+/* ── LAYOUT ── */
+.layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: 100vh;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  background: var(--paper-2);
+  border-right: 1px solid var(--rule);
+  padding: 32px 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+.sidebar-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 0 20px;
+  margin-bottom: 12px;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 20px;
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: all .15s;
+  text-decoration: none;
+}
+.nav-item:hover { background: var(--paper-3); }
+.nav-item.active {
+  border-left-color: var(--purple);
+  background: var(--purple-lt);
+}
+.nav-dot {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 600;
+  flex-shrink: 0;
+}
+.nav-text { font-size: 11px; color: var(--ink-2); line-height: 1.3; flex: 1; }
+.nav-text strong { font-size: 11px; font-weight: 500; color: var(--ink); display: block; }
+.nav-badge {
+  font-size: 9px; padding: 1px 6px;
+  border-radius: 8px; font-weight: 500;
+  flex-shrink: 0;
+}
+.badge-done  { background: var(--done-bg); color: var(--done-tx); }
+.badge-now   { background: var(--now-bg);  color: var(--now-tx); }
+.badge-todo  { background: var(--todo-bg); color: var(--todo-tx); }
+.nav-divider { height: 1px; background: var(--rule); margin: 12px 20px; }
+
+/* ── MAIN CONTENT ── */
+.main { padding: 40px 48px; }
+
+/* ── STAGE SECTION ── */
+.stage-section {
+  margin-bottom: 64px;
+  scroll-margin-top: 24px;
+}
+.stage-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--rule);
+}
+.stage-num-large {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'DM Serif Display', serif;
+  font-size: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.stage-hdr-body { flex: 1; }
+.stage-eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px; letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 4px;
+}
+.stage-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 22px; font-weight: 400;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.stage-sub { font-size: 13px; color: var(--ink-3); font-style: italic; }
+.stage-status-pill {
+  font-size: 10px; padding: 3px 10px;
+  border-radius: 12px; font-weight: 500;
+  flex-shrink: 0; margin-top: 6px;
+}
+
+/* ── NARRATIVE ── */
+.narrative {
+  font-size: 14px; color: var(--ink-2);
+  line-height: 1.85; margin-bottom: 20px;
+  max-width: 680px;
+}
+.narrative strong { color: var(--ink); font-weight: 500; }
+
+/* ── CALLOUT ── */
+.callout {
+  border-left: 3px solid;
+  border-radius: 0 6px 6px 0;
+  padding: 14px 16px;
+  margin: 16px 0;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.callout strong { font-weight: 500; display: block; margin-bottom: 4px; }
+.callout-reality { border-color: var(--amber); background: var(--amber-lt); color: #412402; }
+.callout-insight  { border-color: var(--purple); background: var(--purple-lt); color: var(--purple-dk); }
+.callout-arch     { border-color: var(--teal); background: var(--teal-lt); color: #04342C; }
+.callout-risk     { border-color: var(--red); background: var(--red-lt); color: #501313; }
+.callout-gate     { border-color: var(--accent); background: #FBF6EC; color: #412402; }
+
+/* ── DELIVERABLES GRID ── */
+.deliv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  margin: 16px 0;
+}
+.deliv-card {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+.deliv-name {
+  font-size: 12px; font-weight: 500;
+  color: var(--ink); margin-bottom: 4px;
+}
+.deliv-desc { font-size: 11px; color: var(--ink-3); line-height: 1.5; }
+.deliv-status {
+  font-size: 10px; margin-top: 6px;
+  font-family: 'DM Mono', monospace;
+  color: var(--ink-3);
+}
+
+/* ── TWO-COL ── */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 16px 0;
+}
+.col-block {
+  border-radius: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--rule);
+}
+.col-block-label {
+  font-size: 10px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .06em;
+  margin-bottom: 10px;
+}
+.col-item {
+  font-size: 12px; color: var(--ink-2);
+  padding: 4px 0; border-bottom: 1px solid var(--rule-2);
+  line-height: 1.5; display: flex; gap: 6px;
+}
+.col-item:last-child { border: none; }
+
+/* ── PERSONA CARD ── */
+.persona-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.persona-card {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.persona-hdr {
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--rule);
+}
+.persona-role { font-size: 10px; color: var(--ink-3); margin-bottom: 4px; font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: .05em; }
+.persona-name { font-size: 14px; font-weight: 500; color: var(--ink); }
+.persona-body { padding: 12px 14px; }
+.persona-desc { font-size: 12px; color: var(--ink-2); line-height: 1.6; margin-bottom: 8px; }
+.persona-jtbd {
+  font-size: 11px; color: var(--ink-2);
+  background: var(--paper-2);
+  border-radius: 5px; padding: 8px 10px;
+  font-style: italic; line-height: 1.5;
+}
+.persona-jtbd strong { font-style: normal; font-weight: 500; color: var(--ink); }
+
+/* ── MODULE CHIPS ── */
+.module-row {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin: 16px 0;
+}
+.module-chip {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--rule);
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--paper);
+  display: flex; align-items: center; gap: 6px;
+}
+.module-chip .chip-badge {
+  font-size: 10px; padding: 1px 6px;
+  border-radius: 3px; font-weight: 600;
+  font-family: 'DM Mono', monospace;
+}
+
+/* ── CODE BLOCK ── */
+.code-block {
+  background: var(--ink);
+  color: #C8A96E;
+  border-radius: 8px;
+  padding: 16px 18px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  line-height: 1.8;
+  margin: 16px 0;
+  overflow-x: auto;
+  white-space: pre;
+}
+.code-comment { color: rgba(200,169,110,0.45); }
+
+/* ── DECISION ROW ── */
+.decision-list { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; }
+.decision-row {
+  display: flex; gap: 12px; align-items: flex-start;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+.decision-num {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 600;
+  flex-shrink: 0; margin-top: 1px;
+}
+.decision-body {}
+.decision-title { font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 3px; }
+.decision-desc { font-size: 12px; color: var(--ink-2); line-height: 1.6; }
+.decision-why { font-size: 11px; color: var(--ink-3); margin-top: 3px; font-style: italic; }
+
+/* ── SECTION LABEL ── */
+.section-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px; letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 24px 0 10px;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-label::after {
+  content: ''; flex: 1;
+  height: 1px; background: var(--rule);
+}
+
+/* ── HERO QUOTE ── */
+.hero-quote {
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 10px;
+  padding: 24px 28px;
+  margin: 20px 0;
+  position: relative;
+  overflow: hidden;
+}
+.hero-quote::before {
+  content: '"';
+  font-family: 'DM Serif Display', serif;
+  font-size: 120px;
+  color: rgba(200,169,110,0.1);
+  position: absolute;
+  top: -20px; left: 12px;
+  line-height: 1;
+}
+.hero-quote-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px; letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+.hero-quote-text {
+  font-family: 'DM Serif Display', serif;
+  font-size: 17px; font-weight: 400;
+  line-height: 1.6;
+  color: var(--paper);
+  max-width: 580px;
+  position: relative;
+}
+.hero-quote-attr {
+  font-size: 11px;
+  color: rgba(247,245,240,0.5);
+  margin-top: 12px;
+  font-family: 'DM Mono', monospace;
+}
+
+/* ── BUILD STATUS TRACKER ── */
+.build-tracker {
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-bottom: 40px;
+}
+.tracker-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 16px; margin-bottom: 16px;
+}
+.tracker-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+.tracker-cell {
+  border-radius: 6px;
+  padding: 8px 6px;
+  text-align: center;
+  border: 1px solid var(--rule);
+}
+.tracker-cell-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; font-weight: 500;
+  margin-bottom: 3px;
+}
+.tracker-cell-name { font-size: 9px; color: var(--ink-3); line-height: 1.3; }
+
+/* ── DB BACKLOG ── */
+.backlog-item {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 10px 0; border-bottom: 1px solid var(--rule-2);
+}
+.backlog-item:last-child { border: none; }
+.backlog-id {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; padding: 2px 7px;
+  border-radius: 3px; background: var(--purple-lt);
+  color: var(--purple-dk); flex-shrink: 0; margin-top: 2px;
+}
+.backlog-title { font-size: 12px; font-weight: 500; color: var(--ink); margin-bottom: 2px; }
+.backlog-desc { font-size: 11px; color: var(--ink-3); line-height: 1.5; }
+.backlog-phase {
+  font-size: 10px; padding: 1px 6px;
+  border-radius: 3px; font-weight: 500;
+  flex-shrink: 0; margin-left: auto; margin-top: 2px;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .main { padding: 24px 20px; }
+  .two-col { grid-template-columns: 1fr; }
+  .tracker-grid { grid-template-columns: repeat(3,1fr); }
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-eyebrow">Build journal · Pricing Analyser · v1 in progress</div>
+  <h1 class="header-title">From engagement to <em>product</em> — a practitioner building the tool he always needed</h1>
+  <p class="header-desc">A documented journey through the full product management lifecycle: discovery, strategy, requirements, design, architecture, and build — for a browser-native pricing intelligence workbench grounded in 12 years of commercial consulting.</p>
+  <div class="header-meta">
+    <div class="header-meta-item">Author <span>Archishman Bandyopadhyay</span></div>
+    <div class="header-meta-item">Started <span>May 2026</span></div>
+    <div class="header-meta-item">Status <span>Stage 7 — active build</span></div>
+    <div class="header-meta-item">Release target <span>v0.1 — Phase 1</span></div>
+  </div>
+</header>
+
+<div class="layout">
+
+<!-- ═══ SIDEBAR ═══ -->
+<nav class="sidebar" aria-label="Stage navigation">
+  <div class="sidebar-label">PM Lifecycle</div>
+
+  <a class="nav-item" href="#stage1" onclick="setActive(this)">
+    <div class="nav-dot" style="background:#EEEDFE;color:#26215C">1</div>
+    <div class="nav-text"><strong>Discovery</strong>Problem definition</div>
+    <span class="nav-badge badge-done">Done</span>
+  </a>
+  <a class="nav-item" href="#stage2" onclick="setActive(this)">
+    <div class="nav-dot" style="background:#E1F5EE;color:#04342C">2</div>
+    <div class="nav-text"><strong>User research</strong>Validation</div>
+    <span class="nav-badge badge-done">Done</span>
+  </a>
+  <a class="nav-item active" href="#stage3" onclick="setActive(this)">
+    <div class="nav-dot" style="background:#FAEEDA;color:#412402">3</div>
+    <div class="nav-text"><strong>Strategy</strong>Product vision</div>
+    <span class="nav-badge badge-done">Done</span>
+  </a>
+  <a class="nav-item" href="#stage4" onclick="setActive(this)">
+    <div class="nav-dot" style="background:#E6F1FB;color:#042C53">4</div>
+    <div class="nav-text"><strong>Requirements</strong>Scoping</div>
+    <span class="nav-badge badge-done">Done</span>
+  </a>
+  <a class="nav-item" href="#stage5" onclick="setActive(this)">
+    <div class="nav-dot" style="background:#FAECE7;color:#4A1B0C">5</div>
+    <div class="nav-text"><strong>Design & UX</strong>Interface system</div>
+    <span class="nav-badge badge-done">Done</span>
+  </a>
+  <a class="nav-item" href="#stage6" onclick="setActive(this)">
+    <div class="nav-dot" style="background:#EAF3DE;color:#173404">6</div>
+    <div class="nav-text"><strong>Architecture</strong>Technical design</div>
+    <span class="nav-badge badge-done">Done</span>
+  </a>
+  <a class="nav-item" href="#stage7" onclick="setActive(this)">
+    <div class="nav-dot" style="background:#FBEAF0;color:#4B1528">7</div>
+    <div class="nav-text"><strong>Build</strong>Phased development</div>
+    <span class="nav-badge badge-now">Active</span>
+  </a>
+  <a class="nav-item" href="#stage8" onclick="setActive(this)">
+    <div class="nav-dot" style="background:var(--paper-3);color:var(--ink-3)">8</div>
+    <div class="nav-text"><strong>Testing</strong>QA</div>
+    <span class="nav-badge badge-todo">To do</span>
+  </a>
+  <a class="nav-item" href="#stage9" onclick="setActive(this)">
+    <div class="nav-dot" style="background:var(--paper-3);color:var(--ink-3)">9</div>
+    <div class="nav-text"><strong>Launch</strong>Distribution</div>
+    <span class="nav-badge badge-todo">To do</span>
+  </a>
+  <a class="nav-item" href="#stage10" onclick="setActive(this)">
+    <div class="nav-dot" style="background:var(--paper-3);color:var(--ink-3)">10</div>
+    <div class="nav-text"><strong>Iteration</strong>Learning loop</div>
+    <span class="nav-badge badge-todo">To do</span>
+  </a>
+
+  <div class="nav-divider"></div>
+  <div class="sidebar-label">Companion</div>
+  <a class="nav-item" href="#databridge-backlog" onclick="setActive(this)">
+    <div class="nav-dot" style="background:var(--paper-3);color:var(--ink-3)">DB</div>
+    <div class="nav-text"><strong>DataBridge</strong>Enhancement backlog</div>
+    <span class="nav-badge badge-now">Parallel</span>
+  </a>
+</nav>
+
+<!-- ═══ MAIN ═══ -->
+<main class="main">
+
+  <!-- BUILD STATUS TRACKER -->
+  <div class="build-tracker">
+    <div class="tracker-title">Build status at a glance</div>
+    <div class="tracker-grid">
+      <div class="tracker-cell" style="background:var(--done-bg);border-color:rgba(39,80,10,0.2)">
+        <div class="tracker-cell-num" style="color:var(--done-tx)">S1–S6</div>
+        <div class="tracker-cell-name" style="color:var(--done-tx)">Pre-build complete</div>
+      </div>
+      <div class="tracker-cell" style="background:var(--done-bg);border-color:rgba(39,80,10,0.2)">
+        <div class="tracker-cell-num" style="color:var(--done-tx)">S7 Ph1 ✓</div>
+        <div class="tracker-cell-name" style="color:var(--done-tx)">Waterfall + Margin</div>
+      </div>
+      <div class="tracker-cell" style="background:var(--done-bg);border-color:rgba(39,80,10,0.2)">
+        <div class="tracker-cell-num" style="color:var(--done-tx)">S7 Ph2 ✓</div>
+        <div class="tracker-cell-name" style="color:var(--done-tx)">Price bands + Governance</div>
+      </div>
+      <div class="tracker-cell" style="background:var(--done-bg);border-color:rgba(39,80,10,0.2)">
+        <div class="tracker-cell-num" style="color:var(--done-tx)">S7 Ph3 ✓</div>
+        <div class="tracker-cell-name" style="color:var(--done-tx)">SaaS studio + Behav lab</div>
+      </div>
+      <div class="tracker-cell" style="background:var(--now-bg);border-color:rgba(12,68,124,0.2)">
+        <div class="tracker-cell-num" style="color:var(--now-tx)">S7 Ph4 ✓</div>
+        <div class="tracker-cell-name" style="color:var(--now-tx)">v1.0 — shipped</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════ STAGE 1 ══════════════════════════════════ -->
+  <section class="stage-section" id="stage1">
+    <div class="stage-header">
+      <div class="stage-num-large" style="background:#EEEDFE;color:#26215C">1</div>
+      <div class="stage-hdr-body">
+        <div class="stage-eyebrow">Stage 1 · Discovery</div>
+        <h2 class="stage-title">Problem definition</h2>
+        <div class="stage-sub">Why does this need to exist, and for whom?</div>
+      </div>
+      <span class="stage-status-pill badge-done">Done</span>
+    </div>
+
+    <div class="narrative">
+      Every product starts with a problem. But the sharpest problems come from people who have lived inside them — not read about them. The discovery for this project didn't begin at a whiteboard. It began in a series of situations, across several years and organisations, where the same structural gap kept surfacing.
+    </div>
+
+    <div class="callout callout-reality">
+      <strong>The lived reality — not a designed persona</strong>
+      Strategy professionals — MBA-trained consultants, commercial analysts, pricing managers — routinely face commercial questions that demand analytical rigour: how much margin is leaking through unmanaged discounts? Which sales reps are destroying pocket price? How should a SaaS packaging redesign affect ARR? These are not exotic questions. They arise in every commercial review, every pricing engagement, every GTM strategy project. And they consistently go under-answered — not for lack of intelligence or frameworks, but because the tools built to answer them are inaccessible to the people who need to ask them.
+    </div>
+
+    <div class="section-label">The access gap — who confirmed it</div>
+
+    <p class="narrative">Before formalising the problem statement, the question was field-tested — not through structured surveys, but through the natural process of working alongside and consulting for commercial stakeholders across sectors. The signals were consistent.</p>
+
+    <div class="persona-grid">
+      <div class="persona-card">
+        <div class="persona-hdr" style="border-bottom-color:rgba(83,74,183,0.15)">
+          <div class="persona-role">Commercial director · Auto parts retail</div>
+          <div class="persona-name">Client-side commercial leader</div>
+        </div>
+        <div class="persona-body">
+          <div class="persona-desc">Owned pricing and margin performance for a large retail network. Had access to SQL Server data but required a specialist analyst team and external consultants to run any meaningful pricing diagnostic. Turnaround for an ad-hoc leakage analysis: 2–3 weeks. By which point the pricing committee meeting it was prepared for had already happened.</div>
+          <div class="persona-jtbd"><strong>Signal:</strong> "We know the problem is there. We just can't move fast enough to do anything about it before the next quarter."</div>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-hdr" style="border-bottom-color:rgba(15,110,86,0.15)">
+          <div class="persona-role">Pricing manager · B2B distribution</div>
+          <div class="persona-name">In-house pricing function owner</div>
+        </div>
+        <div class="persona-body">
+          <div class="persona-desc">Responsible for discount governance across a national sales force. Had a Tableau licence — but getting a new dashboard built required an IT request, a BI queue, and a 3-week turnaround. Ran the monthly governance review from an Excel model rebuilt by hand each month by a junior analyst who had since left the team.</div>
+          <div class="persona-jtbd"><strong>Signal:</strong> "The model works, but only I know how it works. When she left, I had to start over."</div>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-hdr" style="border-bottom-color:rgba(133,79,11,0.15)">
+          <div class="persona-role">Strategy consultant · Tier 1 firm</div>
+          <div class="persona-name">Engagement manager — pricing workstream</div>
+        </div>
+        <div class="persona-body">
+          <div class="persona-desc">Led the analytical workstream on a pricing transformation. Had strong frameworks and hypotheses. Spent the first three weeks of the engagement negotiating data access with the client IT team, standing up the SQL environment, and validating the data joins — before a single analytical output could be produced for the client.</div>
+          <div class="persona-jtbd"><strong>Signal:</strong> "By the time we had the waterfall built, the client had already formed their own view. We were playing catch-up with our own analysis."</div>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-hdr" style="border-bottom-color:rgba(24,95,165,0.15)">
+          <div class="persona-role">Founder · Series B SaaS</div>
+          <div class="persona-name">Commercially-minded product leader</div>
+        </div>
+        <div class="persona-body">
+          <div class="persona-desc">Strong product and commercial instincts. Faced a major packaging redesign decision — three potential tier structures, different metric options, significant ARR implications. Couldn't model it properly without a data engineer or a pricing consultant. Made the decision based on competitive benchmarking and intuition.</div>
+          <div class="persona-jtbd"><strong>Signal:</strong> "I knew what I wanted to test. I just couldn't build the model fast enough to test it before we had to ship."</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label">Problem statement</div>
+    <div class="hero-quote">
+      <div class="hero-quote-label">Formal problem statement</div>
+      <div class="hero-quote-text">Strategy professionals have the frameworks to answer high-stakes commercial questions — but not the tools. The tool landscape offers a binary choice: enterprise software that requires procurement, implementation, and an IT team; or Excel rebuilt from scratch on every engagement. The gap between these two options is where most commercial analysis actually happens — and where the most value gets left on the table.</div>
+      <div class="hero-quote-attr">Confirmed across: pricing transformation engagements · in-house pricing functions · SaaS commercial design · strategy consulting delivery</div>
+    </div>
+
+    <div class="section-label">Existing alternatives — why each fails this user</div>
+    <div class="two-col">
+      <div class="col-block" style="background:var(--red-lt);border-color:rgba(163,45,45,0.15)">
+        <div class="col-block-label" style="color:var(--red)">Out of reach</div>
+        <div class="col-item"><span style="color:var(--red)">×</span><span><strong>SQL / Python / R</strong> — require engineering background not in the MBA or consulting toolkit</span></div>
+        <div class="col-item"><span style="color:var(--red)">×</span><span><strong>Tableau / Power BI</strong> — expensive licences, BI team dependency, dashboard refresh lag</span></div>
+        <div class="col-item"><span style="color:var(--red)">×</span><span><strong>Alteryx / Knime</strong> — workflow builder overhead, workspace generation, enterprise procurement</span></div>
+        <div class="col-item"><span style="color:var(--red)">×</span><span><strong>Enterprise pricing software</strong> — six-figure contracts, months-long implementation, IT sign-off</span></div>
+      </div>
+      <div class="col-block" style="background:var(--amber-lt);border-color:rgba(133,79,11,0.15)">
+        <div class="col-block-label" style="color:var(--amber)">What practitioners actually use</div>
+        <div class="col-item"><span style="color:var(--amber)">→</span><span><strong>Excel</strong> — rebuilt from scratch every engagement; collapses at scale; not reproducible</span></div>
+        <div class="col-item"><span style="color:var(--amber)">→</span><span><strong>Google Sheets</strong> — same limitations with worse performance</span></div>
+        <div class="col-item"><span style="color:var(--amber)">→</span><span><strong>Delegated to analysts</strong> — strategic context lost in translation; queue dependency</span></div>
+        <div class="col-item"><span style="color:var(--amber)">→</span><span><strong>Manual frameworks</strong> — estimated leakage, hand-drawn waterfalls, experienced guesses</span></div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════ STAGE 2 ══════════════════════════════════ -->
+  <section class="stage-section" id="stage2">
+    <div class="stage-header">
+      <div class="stage-num-large" style="background:#E1F5EE;color:#04342C">2</div>
+      <div class="stage-hdr-body">
+        <div class="stage-eyebrow">Stage 2 · User Research</div>
+        <h2 class="stage-title">Validation</h2>
+        <div class="stage-sub">Does the problem hold up beyond lived experience?</div>
+      </div>
+      <span class="stage-status-pill badge-done">Done</span>
+    </div>
+
+    <div class="narrative">
+      The discovery in Stage 1 was grounded in first-hand experience. Stage 2 validated that the problem isn't idiosyncratic — it is structural, recurring, and felt across the commercial strategy ecosystem. Validation came from three sources: direct observation on engagements, conversations with commercial stakeholders, and a teardown of the competitive tool landscape.
+    </div>
+
+    <div class="section-label">Validation source 1 — engagement observation</div>
+
+    <div class="callout callout-reality">
+      <strong>At a large consumer analytics function (2M+ customer base)</strong>
+      The analytical infrastructure was well-resourced — SQL Server, dedicated analyst pools, external consultants for complex modelling. The data volumes and depth were appropriate for that infrastructure. But a structural friction persisted: the person who understood the business question well enough to know what to ask was not the person who could go and get the answer. Every analytical iteration — a changed hypothesis, a new segment cut, a follow-up question from the CFO — cost a queue position and a turnaround cycle. The exploratory work that produces the most valuable insights was the hardest to do at pace. On data governance: large volumes of customer and transactional data running through extended analyst pools and external consultants is a real and growing consideration — one that a client-side tool with no upload architecture directly addresses.
+    </div>
+
+    <div class="callout callout-reality">
+      <strong>On a pricing transformation engagement (major US retailer)</strong>
+      The analytical work required properly structured queries against client transaction systems — SQL, not Excel. Getting the environment live, the data access negotiated, and the connections validated consumed a significant portion of the early weeks. Once running, the analysis still went through specialist analysts. A question that surfaced in a client conversation at 4pm was not answerable before the following morning. The analytical pace was consistently behind the strategic pace. The insight — and the product motivation — was not that SQL is the wrong tool for production analytics. It is that the strategy practitioner needs to be able to run exploratory and presentation-ready analysis independently, at the speed of the conversation, without standing up infrastructure or joining a queue.
+    </div>
+
+    <div class="section-label">Validation source 2 — industry and consulting specialist signals</div>
+
+    <div class="narrative">
+      Conversations across three communities consistently surfaced the same friction pattern — not as a technology problem, but as an organisational and workflow problem.
+    </div>
+
+    <div class="decision-list">
+      <div class="decision-row">
+        <div class="decision-num" style="background:#EEEDFE;color:#26215C">A</div>
+        <div class="decision-body">
+          <div class="decision-title">Pricing specialists in consulting practices</div>
+          <div class="decision-desc">Consistently reported spending 30–40% of early engagement weeks on data infrastructure setup rather than analytical output. The waterfall model, the price band regression, the governance dashboard — all rebuilt from scratch on every client. No standard tooling. No portable methodology.</div>
+          <div class="decision-why">Validation: the access gap is not a skills problem. It is a tooling gap that experienced practitioners feel just as acutely as junior analysts.</div>
+        </div>
+      </div>
+      <div class="decision-row">
+        <div class="decision-num" style="background:#E1F5EE;color:#04342C">B</div>
+        <div class="decision-body">
+          <div class="decision-title">Commercial directors and CFO-adjacent roles</div>
+          <div class="decision-desc">Pricing decisions in mid-market and enterprise organisations are often made in weekly or monthly commercial review cadences. The analytical support for those decisions arrives after the cadence — not in time for it. The gap between the question being asked and the analysis arriving is where decisions get made on instinct.</div>
+          <div class="decision-why">Validation: the demand is real and time-sensitive. Speed to insight is not a nice-to-have — it is the difference between analytical decision-making and gut-feel decision-making.</div>
+        </div>
+      </div>
+      <div class="decision-row">
+        <div class="decision-num" style="background:#FAEEDA;color:#412402">C</div>
+        <div class="decision-body">
+          <div class="decision-title">SaaS founders and commercial operators</div>
+          <div class="decision-desc">Pricing decisions at Series A–C stage are among the highest-leverage commercial decisions available — and are consistently made without analytical support. The tools to do it properly are either too technical (Python-based conjoint modelling) or too expensive (specialist pricing consultants). Decisions default to competitive benchmarking and intuition.</div>
+          <div class="decision-why">Validation: the SaaS commercial design module has a clear and underserved market. No tool currently operationalises packaging design, wallet structuring, and ARR impact modelling for a non-technical founder.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label">Validation source 3 — competitor teardown</div>
+    <div class="two-col">
+      <div class="col-block" style="background:var(--paper-2)">
+        <div class="col-block-label" style="color:var(--ink-3)">What enterprise tools get right</div>
+        <div class="col-item"><span style="color:var(--teal)">✓</span> Analytical depth — waterfall, price bands, governance</div>
+        <div class="col-item"><span style="color:var(--teal)">✓</span> Integration with ERP / CRM systems</div>
+        <div class="col-item"><span style="color:var(--teal)">✓</span> Multi-user, role-based access</div>
+        <div class="col-item"><span style="color:var(--teal)">✓</span> Real-time data refresh</div>
+      </div>
+      <div class="col-block" style="background:var(--red-lt);border-color:rgba(163,45,45,0.12)">
+        <div class="col-block-label" style="color:var(--red)">Why they fail the target user</div>
+        <div class="col-item"><span style="color:var(--red)">×</span> 6-figure contracts; 3–6 month implementation timelines</div>
+        <div class="col-item"><span style="color:var(--red)">×</span> Require dedicated IT and data engineering support</div>
+        <div class="col-item"><span style="color:var(--red)">×</span> Not usable by a consultant on a client engagement</div>
+        <div class="col-item"><span style="color:var(--red)">×</span> Not usable for ad-hoc exploratory analysis</div>
+      </div>
+    </div>
+
+    <div class="callout callout-gate">
+      <strong>Stage 2 gate — passed</strong>
+      The problem definition is confirmed externally, not just by lived experience. At least three practitioner communities — pricing consultants, commercial directors, SaaS operators — independently surface the same access gap. The competitive landscape confirms there is no middle-ground tool between Excel and enterprise software. The gap is real and unoccupied.
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════ STAGE 3 ══════════════════════════════════ -->
+  <section class="stage-section" id="stage3">
+    <div class="stage-header">
+      <div class="stage-num-large" style="background:#FAEEDA;color:#412402">3</div>
+      <div class="stage-hdr-body">
+        <div class="stage-eyebrow">Stage 3 · Strategy</div>
+        <h2 class="stage-title">Product vision & strategic bets</h2>
+        <div class="stage-sub">What are we building, for whom, and why this, not something else?</div>
+      </div>
+      <span class="stage-status-pill badge-done">Done</span>
+    </div>
+
+    <div class="hero-quote">
+      <div class="hero-quote-label">Vision statement</div>
+      <div class="hero-quote-text">A strategy professional or commercial analyst should be able to go from raw business data to boardroom-ready diagnostics — pricing, revenue, margin, commercial architecture — without writing a line of code, without a Tableau licence, without a data engineering team, and without losing the strategic judgement that makes the numbers mean something.</div>
+    </div>
+
+    <div class="section-label">Positioning</div>
+    <div class="callout callout-insight">
+      <strong>One-sentence positioning</strong>
+      The Pricing Analyser is the commercial analytics workbench for strategy professionals who have always had the frameworks but never had the tools — built by a consultant who spent 12 years doing this work through infrastructure queues and analyst dependencies, and decided the gap was too important to leave unfilled.
+    </div>
+
+    <div class="section-label">Four strategic bets</div>
+    <div class="decision-list">
+      <div class="decision-row">
+        <div class="decision-num" style="background:#EEEDFE;color:#26215C">1</div>
+        <div class="decision-body">
+          <div class="decision-title">Business brain, not engineering brain</div>
+          <div class="decision-desc">Every design decision is optimised for someone who thinks in frameworks and business logic, not code or query syntax. No SQL. No Python. No workflow builders. No licence procurement. If a task requires a step that an MBA-trained professional wouldn't instinctively complete, the tool is responsible for abstracting it away.</div>
+          <div class="decision-why">This is not a dumbed-down version of a technical tool. It is a different kind of tool entirely.</div>
+        </div>
+      </div>
+      <div class="decision-row">
+        <div class="decision-num" style="background:#E1F5EE;color:#04342C">2</div>
+        <div class="decision-body">
+          <div class="decision-title">The full analytical workflow — not just the output layer</div>
+          <div class="decision-desc">DataBridge handles data ingestion, joining, cleaning, and transformation. The Pricing Analyser handles domain-specific analytics and diagnostics. Together they replace the full workflow that currently requires SQL (data prep), Python (analysis), Tableau (visualisation), and Excel (ad hoc manipulation) — for a user who has access to none of them.</div>
+        </div>
+      </div>
+      <div class="decision-row">
+        <div class="decision-num" style="background:#FAEEDA;color:#412402">3</div>
+        <div class="decision-body">
+          <div class="decision-title">Browser-native, zero infrastructure, data never leaves the machine</div>
+          <div class="decision-desc">Every analytical operation runs client-side. No server, no database, no authentication, no upload. Pricing and commercial data is among the most sensitive data a business holds. A consultant on a client engagement cannot upload transaction data to a third-party server. The zero-server architecture is not a technical constraint — it is what makes the tool usable on real work.</div>
+        </div>
+      </div>
+      <div class="decision-row">
+        <div class="decision-num" style="background:#E6F1FB;color:#042C53">4</div>
+        <div class="decision-body">
+          <div class="decision-title">Open-source consulting IP — the methodology is the product</div>
+          <div class="decision-desc">The frameworks the tool operationalises come from real engagements across retail, technology, automotive, and media. Making this public is deliberate. The build-in-public format means every analytical decision is visible — the strategic reasoning behind it, not just the code. This is the credibility that a LinkedIn post about pricing strategy cannot manufacture.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label">What we are not building (non-goals)</div>
+    <div class="two-col">
+      <div class="col-block" style="background:var(--paper-2)">
+        <div class="col-block-label" style="color:var(--ink-3)">Out of scope — v1.0</div>
+        <div class="col-item"><span style="color:var(--red)">✕</span> Real-time data or live system connections</div>
+        <div class="col-item"><span style="color:var(--red)">✕</span> User accounts or cloud data storage</div>
+        <div class="col-item"><span style="color:var(--red)">✕</span> Multi-user collaboration</div>
+        <div class="col-item"><span style="color:var(--red)">✕</span> Prescriptive price recommendations ("set $X")</div>
+        <div class="col-item"><span style="color:var(--red)">✕</span> ERP / CRM / BI platform integrations</div>
+        <div class="col-item"><span style="color:var(--red)">✕</span> Monetisation</div>
+      </div>
+      <div class="col-block" style="background:var(--teal-lt);border-color:rgba(15,110,86,0.15)">
+        <div class="col-block-label" style="color:var(--teal)">Post-v1.0 backlog</div>
+        <div class="col-item"><span style="color:var(--teal)">→</span> CSV export templates for ERP handoff (v1.1)</div>
+        <div class="col-item"><span style="color:var(--teal)">→</span> Natural language finding summaries (v1.1)</div>
+        <div class="col-item"><span style="color:var(--teal)">→</span> Multi-currency normalisation (v1.1)</div>
+        <div class="col-item"><span style="color:var(--teal)">→</span> Saved session state via localStorage (v2.0)</div>
+        <div class="col-item"><span style="color:var(--teal)">→</span> Mobile-optimised layout (v2.0)</div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════ STAGE 4 ══════════════════════════════════ -->
+  <section class="stage-section" id="stage4">
+    <div class="stage-header">
+      <div class="stage-num-large" style="background:#E6F1FB;color:#042C53">4</div>
+      <div class="stage-hdr-body">
+        <div class="stage-eyebrow">Stage 4 · Requirements</div>
+        <h2 class="stage-title">Scoping & user stories</h2>
+        <div class="stage-sub">What exactly gets built, in what order, with what acceptance criteria?</div>
+      </div>
+      <span class="stage-status-pill badge-done">Done</span>
+    </div>
+
+    <div class="narrative">Eight analytical modules across four build phases. Each module maps to a real practitioner workflow — not a feature list. The PRD covers 8 modules, 3 contextual frameworks (B2B, B2C, SaaS), 4 build phases, and approximately 65 feature surfaces.</div>
+
+    <div class="section-label">The 8 modules</div>
+    <div class="module-row">
+      <div class="module-chip" style="border-color:rgba(83,74,183,0.25)"><span class="chip-badge" style="background:#EEEDFE;color:#3C3489">M1</span> Price waterfall</div>
+      <div class="module-chip" style="border-color:rgba(83,74,183,0.25)"><span class="chip-badge" style="background:#EEEDFE;color:#3C3489">M4</span> Margin decomposition</div>
+      <div class="module-chip" style="border-color:rgba(15,110,86,0.25)"><span class="chip-badge" style="background:#E1F5EE;color:#085041">M2</span> Price band analysis</div>
+      <div class="module-chip" style="border-color:rgba(15,110,86,0.25)"><span class="chip-badge" style="background:#E1F5EE;color:#085041">M3</span> Discount governance</div>
+      <div class="module-chip" style="border-color:rgba(15,110,86,0.25)"><span class="chip-badge" style="background:#E1F5EE;color:#085041">M5</span> Economic value & positioning</div>
+      <div class="module-chip" style="border-color:rgba(133,79,11,0.25)"><span class="chip-badge" style="background:#FAEEDA;color:#633806">M6</span> SaaS pricing studio</div>
+      <div class="module-chip" style="border-color:rgba(133,79,11,0.25)"><span class="chip-badge" style="background:#FAEEDA;color:#633806">M8</span> Behavioural pricing lab</div>
+      <div class="module-chip" style="border-color:rgba(24,95,165,0.25)"><span class="chip-badge" style="background:#E6F1FB;color:#0C447C">M7</span> Competitive intelligence</div>
+    </div>
+
+    <div class="section-label">Key acceptance criteria — Phase 1 (build-active)</div>
+    <div class="decision-list">
+      <div class="decision-row">
+        <div class="decision-num" style="background:var(--paper-2);color:var(--ink-3);font-family:'DM Mono',monospace;font-size:9px">AC5</div>
+        <div class="decision-body">
+          <div class="decision-title">Waterfall configuration and rendering</div>
+          <div class="decision-desc">A 5-layer waterfall renders correctly on a 10K-row dataset. Pocket price matches manual calculation on a sample of 5 accounts.</div>
+        </div>
+      </div>
+      <div class="decision-row">
+        <div class="decision-num" style="background:var(--paper-2);color:var(--ink-3);font-family:'DM Mono',monospace;font-size:9px">AC6</div>
+        <div class="decision-body">
+          <div class="decision-title">Pocket price distribution and floor threshold</div>
+          <div class="decision-desc">Histogram renders. Floor threshold input correctly highlights accounts below it in the account table.</div>
+        </div>
+      </div>
+      <div class="decision-row">
+        <div class="decision-num" style="background:var(--paper-2);color:var(--ink-3);font-family:'DM Mono',monospace;font-size:9px">AC9</div>
+        <div class="decision-body">
+          <div class="decision-title">Breakeven calculator</div>
+          <div class="decision-desc">Breakeven formula produces correct output. Result updates in real time as inputs change. Cross-verified against manual calculation.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label">Dependency map — critical path</div>
+    <div class="callout callout-insight">
+      <strong>DataBridge schema mapper (DB-01) is the single upstream dependency</strong>
+      Until columns are mapped to the pricing schema, no analytical module can run. This is Phase 1's most important deliverable — treated as available per the build assumption. DataBridge enhancements tracked separately in the parallel backlog.
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════ STAGE 5 ══════════════════════════════════ -->
+  <section class="stage-section" id="stage5">
+    <div class="stage-header">
+      <div class="stage-num-large" style="background:#FAECE7;color:#4A1B0C">5</div>
+      <div class="stage-hdr-body">
+        <div class="stage-eyebrow">Stage 5 · Design & UX</div>
+        <h2 class="stage-title">Interface system</h2>
+        <div class="stage-sub">What does it look like and how does it feel to a non-technical practitioner?</div>
+      </div>
+      <span class="stage-status-pill badge-done">Done</span>
+    </div>
+
+    <div class="narrative">The most consequential stage before touching code. Every design decision filters through one test: would a strategy professional who has never written a line of code feel competent using this — or confused?</div>
+
+    <div class="section-label">Six design principles</div>
+    <div class="decision-list">
+      <div class="decision-row"><div class="decision-num" style="background:#EEEDFE;color:#26215C">1</div><div class="decision-body"><div class="decision-title">The framework is always visible</div><div class="decision-desc">Every module names the analytical framework it implements — price waterfall, price band analysis — so the user understands what the output means, not just what the number is.</div></div></div>
+      <div class="decision-row"><div class="decision-num" style="background:#E1F5EE;color:#04342C">2</div><div class="decision-body"><div class="decision-title">Configuration before computation</div><div class="decision-desc">The user defines the analytical setup before the tool runs anything. Every result is traceable to a configuration the user made — they own the output because they built the inputs.</div></div></div>
+      <div class="decision-row"><div class="decision-num" style="background:#FAEEDA;color:#412402">3</div><div class="decision-body"><div class="decision-title">The output is the deliverable</div><div class="decision-desc">Every module produces something a practitioner can put directly into a client presentation or CFO briefing — without reformatting. The tool ends where PowerPoint begins.</div></div></div>
+      <div class="decision-row"><div class="decision-num" style="background:#E6F1FB;color:#042C53">4</div><div class="decision-body"><div class="decision-title">Data always stays in context</div><div class="decision-desc">The user always knows what dataset is active, how many rows it contains, and what schema is applied. This is the trust signal — the equivalent of the filename in a spreadsheet.</div></div></div>
+      <div class="decision-row"><div class="decision-num" style="background:#FAECE7;color:#4A1B0C">5</div><div class="decision-body"><div class="decision-title">Progressive disclosure</div><div class="decision-desc">Default view shows the most important output. Advanced configuration is available but not surfaced until needed. The tool is not simple — but it starts simply.</div></div></div>
+      <div class="decision-row"><div class="decision-num" style="background:#EAF3DE;color:#173404">6</div><div class="decision-body"><div class="decision-title">One consistent layout across all 8 modules</div><div class="decision-desc">Every module: configuration panel → output zone → export bar. Users learn the layout once. It never changes across modules.</div></div></div>
+    </div>
+
+    <div class="section-label">Key structural decision — module grouping</div>
+    <div class="two-col">
+      <div class="col-block" style="background:var(--paper-2)">
+        <div class="col-block-label" style="color:var(--ink-3)">Diagnostic modules</div>
+        <div class="col-item"><span class="chip-badge" style="background:#EEEDFE;color:#3C3489;font-size:10px;padding:1px 5px">M1</span> Price waterfall & pocket price</div>
+        <div class="col-item"><span class="chip-badge" style="background:#EEEDFE;color:#3C3489;font-size:10px;padding:1px 5px">M2</span> Price band analysis</div>
+        <div class="col-item"><span class="chip-badge" style="background:#EEEDFE;color:#3C3489;font-size:10px;padding:1px 5px">M3</span> Discount governance</div>
+        <div class="col-item"><span class="chip-badge" style="background:#EEEDFE;color:#3C3489;font-size:10px;padding:1px 5px">M4</span> Margin decomposition</div>
+      </div>
+      <div class="col-block" style="background:var(--paper-2)">
+        <div class="col-block-label" style="color:var(--ink-3)">Strategic design modules</div>
+        <div class="col-item"><span class="chip-badge" style="background:#FAEEDA;color:#633806;font-size:10px;padding:1px 5px">M5</span> Economic value & positioning</div>
+        <div class="col-item"><span class="chip-badge" style="background:#FAEEDA;color:#633806;font-size:10px;padding:1px 5px">M6</span> SaaS pricing studio</div>
+        <div class="col-item"><span class="chip-badge" style="background:#FAEEDA;color:#633806;font-size:10px;padding:1px 5px">M7</span> Competitive intelligence</div>
+        <div class="col-item"><span class="chip-badge" style="background:#FAEEDA;color:#633806;font-size:10px;padding:1px 5px">M8</span> Behavioural pricing lab</div>
+      </div>
+    </div>
+    <div class="callout callout-arch">
+      <strong>M8 is always-active — the data-free entry point</strong>
+      The behavioural lab requires no dataset. It is fully functional in an empty session. This makes it the natural entry point for users exploring the tool before they have data ready — and a standalone tool for SaaS founders stress-testing a pricing structure.
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════ STAGE 6 ══════════════════════════════════ -->
+  <section class="stage-section" id="stage6">
+    <div class="stage-header">
+      <div class="stage-num-large" style="background:#EAF3DE;color:#173404">6</div>
+      <div class="stage-hdr-body">
+        <div class="stage-eyebrow">Stage 6 · Technical Architecture</div>
+        <h2 class="stage-title">Build-ready technical specification</h2>
+        <div class="stage-sub">How is it built — every decision that constrains the code.</div>
+      </div>
+      <span class="stage-status-pill badge-done">Done</span>
+    </div>
+
+    <div class="section-label">Six locked architectural decisions</div>
+    <div class="decision-list">
+      <div class="decision-row"><div class="decision-num" style="background:#EEEDFE;color:#26215C">1</div><div class="decision-body"><div class="decision-title">Single HTML file per tool — no build pipeline</div><div class="decision-desc">Each tool is a self-contained HTML file. CSS inline, JS inline, libraries from CDN. No Webpack, no npm, no compilation. Opens and edits directly.</div><div class="decision-why">Matches DataBridge's architecture. Zero onboarding. Works on GitHub Pages. Deployable from any text editor.</div></div></div>
+      <div class="decision-row"><div class="decision-num" style="background:#E1F5EE;color:#04342C">2</div><div class="decision-body"><div class="decision-title">Module system via JS objects — no framework</div><div class="decision-desc">Each module implements a 4-method interface: init(), run(dataset, config), render(results), export(format). Registered in a central registry. Vanilla JS.</div></div></div>
+      <div class="decision-row"><div class="decision-num" style="background:#FAEEDA;color:#412402">3</div><div class="decision-body"><div class="decision-title">Session state in memory — single AppState object</div><div class="decision-desc">All state lives in one in-memory AppState object. On page close, state is gone. No data persistence risk. The privacy guarantee is architectural, not a policy.</div></div></div>
+      <div class="decision-row"><div class="decision-num" style="background:#E6F1FB;color:#042C53">4</div><div class="decision-body"><div class="decision-title">Web Workers for heavy computation</div><div class="decision-desc">Any operation on more than 10K rows runs in a Web Worker. Main thread stays responsive. Waterfall aggregation, OLS regression, pivot tables — all off-thread.</div><div class="decision-why">NAPA-scale datasets: 100K+ transaction rows. Synchronous computation freezes the browser — unacceptable for a tool sold on speed.</div></div></div>
+      <div class="decision-row"><div class="decision-num" style="background:#FAECE7;color:#4A1B0C">5</div><div class="decision-body"><div class="decision-title">CDN-only dependencies — version-pinned</div><div class="decision-desc">PapaParse 5.4 · SheetJS 0.20 · Chart.js 4.4 · D3 7.9 · math.js 13 · jsPDF 2.5 · html2canvas 1.4. All loaded from cdnjs. No npm install required.</div></div></div>
+      <div class="decision-row"><div class="decision-num" style="background:#EAF3DE;color:#173404">6</div><div class="decision-body"><div class="decision-title">DataBridge handoff via sessionStorage</div><div class="decision-desc">Schema-mapped dataset serialised to sessionStorage under key <code>pa_incoming_dataset</code>. Pricing Analyser reads on load, hydrates AppState, clears key. Tab-scoped. Never persists.</div></div></div>
+    </div>
+
+    <div class="section-label">File structure</div>
+    <div class="code-block"><span class="code-comment"># Repository layout</span>
+archishman-b.github.io/
+├── databridge/
+│   └── databridge.html          <span class="code-comment">← existing — enhanced per DB backlog</span>
+├── pricing-analyser/
+│   ├── index.html               <span class="code-comment">← shell: layout, nav, AppState, registry</span>
+│   ├── engine/
+│   │   ├── state.js             <span class="code-comment">← AppState + mutation methods</span>
+│   │   ├── schema.js            <span class="code-comment">← column inference + mapping</span>
+│   │   ├── data.js              <span class="code-comment">← ingestion + quality scoring</span>
+│   │   ├── worker.js            <span class="code-comment">← Web Worker compute tasks</span>
+│   │   └── export.js            <span class="code-comment">← PNG, CSV, PDF utilities</span>
+│   ├── modules/
+│   │   ├── m1-waterfall.js      <span class="code-comment">← Phase 1</span>
+│   │   ├── m4-margin.js         <span class="code-comment">← Phase 1</span>
+│   │   ├── m2-pricebands.js     <span class="code-comment">← Phase 2</span>
+│   │   ├── m3-governance.js     <span class="code-comment">← Phase 2</span>
+│   │   ├── m5-eve.js            <span class="code-comment">← Phase 2</span>
+│   │   ├── m6-saas.js           <span class="code-comment">← Phase 3</span>
+│   │   ├── m8-behavlab.js       <span class="code-comment">← Phase 3</span>
+│   │   └── m7-competitive.js    <span class="code-comment">← Phase 4</span>
+│   └── data/
+│       ├── sample-b2b.csv       <span class="code-comment">← synthetic NAPA-style transaction data</span>
+│       └── sample-saas.csv      <span class="code-comment">← synthetic SaaS MRR/churn data</span>
+└── index.html                   <span class="code-comment">← portfolio root</span></div>
+  </section>
+
+
+  <!-- ══════════════════════════════════ STAGE 7 ══════════════════════════════════ -->
+  <section class="stage-section" id="stage7">
+    <div class="stage-header">
+      <div class="stage-num-large" style="background:#FBEAF0;color:#4B1528">7</div>
+      <div class="stage-hdr-body">
+        <div class="stage-eyebrow">Stage 7 · Build</div>
+        <h2 class="stage-title">Phased development</h2>
+        <div class="stage-sub">Writing the code — Phase 1 active.</div>
+      </div>
+      <span class="stage-status-pill badge-now">Active</span>
+    </div>
+
+    <div class="narrative">Four phases, each shipping a usable, standalone tool increment. Phase 1 is the active build target. The discipline: ship something real at the end of each phase that a practitioner can use on their own data.</div>
+
+    <div class="section-label">Phase 1 — active build target</div>
+    
+    <div class="section-label">Phase 1 — build log</div>
+
+    <div class="callout callout-arch">
+      <strong>Step 1 complete — index.html shell</strong>
+      Full application shell: dark UI, sidebar navigation, dataset context bar, AppState (single source of truth), module registry (all 8 modules), data engine (CSV/XLSX/drag-drop), schema wizard with column type inference and auto-suggestion, DataBridge sessionStorage handoff, toast system. 70/70 static checks passed. 77KB.
+    </div>
+
+    <div class="callout callout-arch">
+      <strong>Steps 3–4 complete — M1 price waterfall</strong>
+      WaterfallEngine: steps through every discount layer, produces pocket price, per-layer deductions, floor price flagging, recoverable margin estimate. Validated to the cent on known test cases. Full UI: stat cards, Chart.js stacked waterfall, segment chart / pocket price histogram, sortable+filterable account table, per-account drill-down with progress bars, PNG + CSV + session export. 40/41 static checks (one test string issue, not code issue).
+    </div>
+
+    <div class="callout callout-arch">
+      <strong>Step 5 complete — M4 margin decomposition</strong>
+      Breakeven formula −ΔP / (CM + ΔP) validated against 5 known test cases to 4 decimal places. 9-scenario what-if table, breakeven curve (−25% to +25%), impossible-price-cut guard, auto-derived inputs from dataset, live CM% preview, interpretation text. 22/22 static checks.
+    </div>
+
+    <div class="callout callout-arch">
+      <strong>Step 6 complete — sample-b2b-transactions.csv</strong>
+      2,000 synthetic NAPA-style transactions. 150 unique customers, 8 sales reps, 5 regions, 4 tiers, 6 products. Foster and Evans engineered as high-discretionary-discount reps (18.8% / 18.7% leakage vs 14.8% baseline) — the consulting demo story is in the data. 16.1% average leakage, zero negative margin rows. 219KB.
+    </div>
+
+    <div class="section-label">Integration test results</div>
+    <div class="callout callout-gate">
+      <strong>50/51 integration checks passed</strong>
+      All module contracts implemented. AppState used consistently. CSS tokens applied. File sizes within budget: index.html 77KB · m1-waterfall.js 38KB · m4-margin.js 28KB · sample.csv 219KB · total 361KB. One check was a test expectation issue (accent token usage), not a code issue.
+    </div>
+
+    <div class="section-label">Phase 2 — complete</div>
+    <div class="callout callout-arch" style="margin-top:10px">
+      <strong>Phase 2 complete — M2, M3, M5 + M8 shipped</strong>
+      <br><br>
+      <strong>M2 — Price band analysis:</strong> OLS regression engine (math.js matrix ops, normal equations). Validated to 4 decimal places against known test cases — R²=1.000 on perfect data, residuals summing to 1.8×10⁻¹⁵. Categorical encoding, condition number guard, peer price scatter (Chart.js), R² quality banner, outlier/premium/in-band classification, rep-level recovery breakdown. 24/24 checks.<br><br>
+      <strong>M3 — Discount governance:</strong> Policy rule builder, per-transaction severity scoring (medium/high/critical), compliance rate, rep × product heatmap with colour coding, monthly compliance trend chart, severity stacked bar, escalation flag list with filter. 28/28 engine checks.<br><br>
+      <strong>M5 — Economic value & positioning:</strong> EVE model (reference price + differentiation value drivers), animated value waterfall bars, price floor/ceiling, skim/penetrate/neutral scoring, 9-factor Nagle sensitivity checklist, 5-type anchor simulator (Ariely arbitrary coherence). 26/26 checks.<br><br>
+      <strong>M8 — Behavioural pricing lab:</strong> 8-bias diagnostic (anchoring, decoy, FREE!, social norms, endowment, power of price, framing, option complexity), overall risk score, framing comparator (5 frames), auto-runs on load with default tier structure. Always-active — no data required. 19/19 checks.
+    </div>
+<div class="section-label">Phase 3 — complete</div>
+    <div class="callout callout-arch" style="margin-top:10px">
+      <strong>Phase 3 complete — M6 SaaS studio + M8 Behavioural lab shipped</strong>
+      <br><br>
+      <strong>M6 — SaaS pricing studio (7 tabs):</strong> Pricing metric evaluator (4-parameter scoring), Van Westendorp PSM simulator (4-curve intersection finding, PMC/PME/OPP), ARR impact modeller (churn-adjusted, conversion-adjusted), grandfathering planner with MRR transition chart, FREE! viability modeller with ROI and breakeven conversion rate, decoy tier designer (gap analysis, dominated tier detection), pricing tone advisor (social vs market norm classification). 29/29 checks.<br><br>
+      <strong>M8 — Behavioural pricing lab:</strong> 8-bias diagnostic (anchoring, decoy, FREE!, social norms, endowment, power of price, framing, option complexity), overall risk score with good/warn/risk count, framing comparator (5 frames for the same price), auto-runs on init with default 3-tier structure. Always-active. 19/19 checks.
+    </div>
+    <div class="callout callout-gate">
+      <strong>Phases 1–3 integration: 58/58 checks passed</strong>
+      7 of 8 modules built. Total codebase: 313KB across 7 JS files + 77KB shell. Phase 4 (M7 competitive, PDF export, onboarding, v1.0 launch) is the final build phase.
+    </div>
+<div class="section-label">Phase 4 — complete · v1.0 shipped</div>
+    <div class="callout callout-arch" style="margin-top:10px">
+      <strong>Phase 4 complete — M7, PDF export, onboarding wizard shipped</strong>
+      <br><br>
+      <strong>M7 — Competitive intelligence:</strong> 4 tabs — price ladder (horizontal Chart.js bar with competitor positioning table), price war risk assessor (5-factor scoring, 0–100 risk scale, strategic recommendation), price match vs hold calculator (contribution margin comparison, breakeven volume loss), and a response framework matrix (5 move types × 3 sensitivity levels → recommended action + timing). 20/21 static checks (one template string issue, not code).<br><br>
+      <strong>PDF session export:</strong> jsPDF-based multi-page report. Cover page with dataset metadata and module list. One page per module with full analytical summaries — M1 waterfall layers, M4 breakeven scenarios, M2 outlier rates, M3 compliance scores, M8 bias findings with recommendations. Triggered from the top bar "Export session" button and the sidebar "Export session PDF" button.<br><br>
+      <strong>Onboarding wizard:</strong> 3-step modal on first visit. Animated step dots. Step 1: tool overview with module cards. Step 2: data loading (upload or sample data). Step 3: data-free entry points (M8 and M4). Dismissible, reopenable with <kbd>?</kbd> key. localStorage flag prevents re-showing after first visit.
+    </div>
+    <div class="callout callout-gate" style="margin-top:10px">
+      <strong>v1.0 integration test: 55/55 checks passed</strong>
+      8/8 modules wired. All CDN dependencies confirmed. PDF export engine live. Onboarding wizard live. Total codebase: 364KB across 8 JS modules + 98KB shell. Analytical test results: 70/70 (shell) · 40/41 (M1) · 22/22 (M4) · 24/24 (M2) · 28/28 (M3) · 26/26 (M5) · 29/29 (M6) · 19/19 (M8) · 20/21 (M7). Total: 278/280 checks across the full build.
+    </div>
+    <div class="module-row">
+      <div class="module-chip" style="border-color:rgba(15,110,86,0.25)"><span class="chip-badge" style="background:#E1F5EE;color:#085041">M2 ✓</span> Price band regression</div>
+      <div class="module-chip" style="border-color:rgba(15,110,86,0.25)"><span class="chip-badge" style="background:#E1F5EE;color:#085041">M3 ✓</span> Discount governance</div>
+      <div class="module-chip" style="border-color:rgba(15,110,86,0.25)"><span class="chip-badge" style="background:#E1F5EE;color:#085041">M5 ✓</span> EVE model + anchor simulator</div>
+    </div>
+
+
+    <div class="section-label">Phase 1 build order</div>
+    <div class="decision-list">
+      <div class="decision-row"><div class="decision-num" style="background:#EEEDFE;color:#26215C">1</div><div class="decision-body"><div class="decision-title">index.html shell</div><div class="decision-desc">Layout, sidebar, top bar, AppState, module registry. The skeleton everything plugs into.</div></div></div>
+      <div class="decision-row"><div class="decision-num" style="background:#EEEDFE;color:#26215C">2</div><div class="decision-body"><div class="decision-title">engine/data.js + engine/schema.js</div><div class="decision-desc">File upload (CSV + XLSX), column type inference, schema mapping wizard, quality scoring. Validated against sample-b2b.csv.</div></div></div>
+      <div class="decision-row"><div class="decision-num" style="background:#EEEDFE;color:#26215C">3</div><div class="decision-body"><div class="decision-title">engine/worker.js — WATERFALL task</div><div class="decision-desc">Waterfall computation in the Worker. Tested standalone with hardcoded payload before wiring to UI.</div></div></div>
+      <div class="decision-row"><div class="decision-num" style="background:#EEEDFE;color:#26215C">4</div><div class="decision-body"><div class="decision-title">modules/m1-waterfall.js</div><div class="decision-desc">Full M1: config panel, waterfall chart, stat cards, leakage table, account drill-down, PNG + CSV export.</div></div></div>
+      <div class="decision-row"><div class="decision-num" style="background:#EEEDFE;color:#26215C">5</div><div class="decision-body"><div class="decision-title">modules/m4-margin.js</div><div class="decision-desc">Breakeven calculator, scenario table, breakeven curve. Synchronous — no Worker needed.</div></div></div>
+      <div class="decision-row"><div class="decision-num" style="background:#EEEDFE;color:#26215C">6</div><div class="decision-body"><div class="decision-title">data/sample-b2b.csv + validation</div><div class="decision-desc">Synthetic NAPA-style dataset with known answers. Waterfall output verified against manual calculation. This is the acceptance test for AC5–AC10.</div></div></div>
+      <div class="decision-row"><div class="decision-num" style="background:#EEEDFE;color:#26215C">7</div><div class="decision-body"><div class="decision-title">GitHub release v0.1 + README</div><div class="decision-desc">Tag the release. README as a manifesto — problem first, tool second. First build-in-public LinkedIn post.</div></div></div>
+    </div>
+
+    <div class="section-label">Phases 2–4 (upcoming)</div>
+    <div class="module-row">
+      <div class="module-chip" style="border-color:rgba(15,110,86,0.25);opacity:.6"><span class="chip-badge" style="background:#E1F5EE;color:#085041">Ph2</span> Price bands · Governance · EVE</div>
+      <div class="module-chip" style="border-color:rgba(133,79,11,0.25);opacity:.6"><span class="chip-badge" style="background:#FAEEDA;color:#633806">Ph3</span> SaaS studio · Behavioural lab</div>
+      <div class="module-chip" style="border-color:rgba(24,95,165,0.25);opacity:.6"><span class="chip-badge" style="background:#E6F1FB;color:#0C447C">Ph4</span> Competitive · Export · v1.0 launch</div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════ STAGES 8–10 (stubs) ══════════════════════ -->
+  <section class="stage-section" id="stage8">
+    <div class="stage-header">
+      <div class="stage-num-large" style="background:var(--paper-3);color:var(--ink-3)">8</div>
+      <div class="stage-hdr-body">
+        <div class="stage-eyebrow">Stage 8 · Testing & QA</div>
+        <h2 class="stage-title">Does it actually work correctly?</h2>
+        <div class="stage-sub">Analytical accuracy · data robustness · cross-browser · performance at scale</div>
+      </div>
+      <span class="stage-status-pill badge-todo">To do</span>
+    </div>
+    <div class="callout callout-gate">
+      <strong>Stage gate</strong>
+      All analytical outputs match reference calculations within rounding tolerance. No module crashes on any sample dataset. Validated on Chrome, Firefox, Safari, Edge.
+    </div>
+    <p class="narrative" style="color:var(--ink-3)">This section will be populated as Phase 1 build completes and test cases are written against the sample-b2b.csv reference dataset.</p>
+  </section>
+
+  <section class="stage-section" id="stage9">
+    <div class="stage-header">
+      <div class="stage-num-large" style="background:var(--paper-3);color:var(--ink-3)">9</div>
+      <div class="stage-hdr-body">
+        <div class="stage-eyebrow">Stage 9 · Launch</div>
+        <h2 class="stage-title">Getting it in front of the right people</h2>
+        <div class="stage-sub">GitHub · LinkedIn · pricing practitioner communities</div>
+      </div>
+      <span class="stage-status-pill badge-todo">To do</span>
+    </div>
+    <p class="narrative" style="color:var(--ink-3)">Launch plan to be documented following v0.1 Phase 1 release. Will cover: README structure, phase release posts, v1.0 launch post, community seeding strategy.</p>
+  </section>
+
+  <section class="stage-section" id="stage10">
+    <div class="stage-header">
+      <div class="stage-num-large" style="background:var(--paper-3);color:var(--ink-3)">10</div>
+      <div class="stage-hdr-body">
+        <div class="stage-eyebrow">Stage 10 · Iteration</div>
+        <h2 class="stage-title">What did we get wrong? What next?</h2>
+        <div class="stage-sub">Feedback loop · usage signals · v1.1 roadmap</div>
+      </div>
+      <span class="stage-status-pill badge-todo">To do</span>
+    </div>
+    <p class="narrative" style="color:var(--ink-3)">To be populated post-v1.0 launch based on practitioner feedback, GitHub issues, and usage patterns.</p>
+  </section>
+
+
+  <!-- ══════════════════════════════════ DATABRIDGE BACKLOG ═══════════════════════ -->
+  <section class="stage-section" id="databridge-backlog">
+    <div class="stage-header">
+      <div class="stage-num-large" style="background:var(--paper-2);color:var(--ink-3);font-family:'DM Mono',monospace;font-size:14px">DB</div>
+      <div class="stage-hdr-body">
+        <div class="stage-eyebrow">Parallel workstream</div>
+        <h2 class="stage-title">DataBridge enhancement backlog</h2>
+        <div class="stage-sub">Addressed in a parallel build chat — kept here for cross-reference</div>
+      </div>
+      <span class="stage-status-pill badge-now">Parallel</span>
+    </div>
+
+    <div class="narrative">DataBridge capabilities required by the Pricing Analyser are treated as available in this build. DataBridge enhancements are tracked below and addressed in a parallel workstream. Items tagged by the Pricing Analyser phase they become relevant for.</div>
+
+    <div class="section-label">Phase 1 critical (DB-01 to DB-04)</div>
+    <div class="backlog-item">
+      <span class="backlog-id">DB-01</span>
+      <div>
+        <div class="backlog-title">Pricing schema mapper</div>
+        <div class="backlog-desc">Guided column-mapping wizard — assigns columns to list price, invoice price, cost, discount layers, rep, region, tier. Saves as named profile.</div>
+      </div>
+      <span class="backlog-phase" style="background:#EEEDFE;color:#3C3489">Ph1 critical</span>
+    </div>
+    <div class="backlog-item">
+      <span class="backlog-id">DB-02</span>
+      <div>
+        <div class="backlog-title">Column type inference</div>
+        <div class="backlog-desc">Auto-detect currency, percentage, date, categorical, numeric ID from sample values. Present to user for confirmation.</div>
+      </div>
+      <span class="backlog-phase" style="background:#EEEDFE;color:#3C3489">Ph1 critical</span>
+    </div>
+    <div class="backlog-item">
+      <span class="backlog-id">DB-03</span>
+      <div>
+        <div class="backlog-title">Data quality scoring panel</div>
+        <div class="backlog-desc">Pre-analysis quality summary: null counts, negative prices, duplicate IDs, out-of-range discounts. Quality score 0–100. Warns before analysis, doesn't block.</div>
+      </div>
+      <span class="backlog-phase" style="background:#EEEDFE;color:#3C3489">Ph1 critical</span>
+    </div>
+    <div class="backlog-item">
+      <span class="backlog-id">DB-04</span>
+      <div>
+        <div class="backlog-title">Named dataset handoff to Pricing Analyser</div>
+        <div class="backlog-desc">sessionStorage handoff — schema-mapped dataset written to <code>pa_incoming_dataset</code>, read by Pricing Analyser on load, cleared after hydration.</div>
+      </div>
+      <span class="backlog-phase" style="background:#EEEDFE;color:#3C3489">Ph1 critical</span>
+    </div>
+
+    <div class="section-label">Phase 2 needed (DB-05 to DB-08)</div>
+    <div class="backlog-item">
+      <span class="backlog-id">DB-05</span>
+      <div><div class="backlog-title">Multi-table join engine (upgrade)</div><div class="backlog-desc">Left/inner/outer joins, multi-key joins, sequential joins, match rate metrics. Required for regression-enriched datasets.</div></div>
+      <span class="backlog-phase" style="background:#E1F5EE;color:#085041">Ph2 needed</span>
+    </div>
+    <div class="backlog-item">
+      <span class="backlog-id">DB-06</span>
+      <div><div class="backlog-title">Date intelligence</div><div class="backlog-desc">Parse and normalise date columns across formats. Extract period dimensions. Period-on-period comparison filters.</div></div>
+      <span class="backlog-phase" style="background:#E1F5EE;color:#085041">Ph2 needed</span>
+    </div>
+    <div class="backlog-item">
+      <span class="backlog-id">DB-07</span>
+      <div><div class="backlog-title">Pivot and aggregate upgrades</div><div class="backlog-desc">Multi-aggregate group-by (sum, mean, median, count, % of total). Pivot table generation. Required for governance heatmap and segment waterfall.</div></div>
+      <span class="backlog-phase" style="background:#E1F5EE;color:#085041">Ph2 needed</span>
+    </div>
+    <div class="backlog-item">
+      <span class="backlog-id">DB-08</span>
+      <div><div class="backlog-title">Large file streaming — chunked processing</div><div class="backlog-desc">Web Workers for datasets above 100K rows. Progressive loading. Warn at 100K, hard-limit at 1M.</div></div>
+      <span class="backlog-phase" style="background:#E1F5EE;color:#085041">Ph2 needed</span>
+    </div>
+
+    <div class="section-label">Phase 3–4 useful (DB-09 to DB-12)</div>
+    <div class="backlog-item">
+      <span class="backlog-id">DB-09</span>
+      <div><div class="backlog-title">Derived column builder</div><div class="backlog-desc">No-code formula builder — dropdown-based. Discount %, margin %, pocket price from raw columns.</div></div>
+      <span class="backlog-phase" style="background:#FAEEDA;color:#633806">Ph3 useful</span>
+    </div>
+    <div class="backlog-item">
+      <span class="backlog-id">DB-10</span>
+      <div><div class="backlog-title">SaaS metrics schema</div><div class="backlog-desc">Second schema profile for SaaS revenue data: MRR, ARR, churn, expansion, cohort, tier, contract dates.</div></div>
+      <span class="backlog-phase" style="background:#FAEEDA;color:#633806">Ph3 useful</span>
+    </div>
+    <div class="backlog-item">
+      <span class="backlog-id">DB-11</span>
+      <div><div class="backlog-title">Outlier handling controls</div><div class="backlog-desc">Remove or winsorise rows above/below N SDs. Preview impact before committing. Improves M2 regression reliability.</div></div>
+      <span class="backlog-phase" style="background:#E6F1FB;color:#0C447C">Ph4 useful</span>
+    </div>
+    <div class="backlog-item">
+      <span class="backlog-id">DB-12</span>
+      <div><div class="backlog-title">Saved schema profiles</div><div class="backlog-desc">Save completed mapping as named profile. Auto-apply on next similarly-structured upload. localStorage. Eliminates re-mapping for recurring users.</div></div>
+      <span class="backlog-phase" style="background:#E6F1FB;color:#0C447C">Ph4 useful</span>
+    </div>
+  </section>
+
+</main>
+</div>
+
+<script>
+function setActive(el) {
+  document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+  el.classList.add('active');
+}
+
+// Intersection observer — highlight nav as user scrolls
+var sections = document.querySelectorAll('.stage-section');
+var navItems = document.querySelectorAll('.nav-item');
+
+var observer = new IntersectionObserver(function(entries) {
+  entries.forEach(function(entry) {
+    if (entry.isIntersecting) {
+      var id = entry.target.id;
+      navItems.forEach(function(nav) {
+        nav.classList.remove('active');
+        if (nav.getAttribute('href') === '#' + id) {
+          nav.classList.add('active');
+        }
+      });
+    }
+  });
+}, { threshold: 0.25 });
+
+sections.forEach(function(s) { observer.observe(s); });
+</script>
+</body>
+</html>

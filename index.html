@@ -1,0 +1,2600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pricing Analyser</title>
+
+<!-- ── DEPENDENCIES (version-pinned CDN) ── -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.0/math.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<style>
+/* ════════════════════════════════════════════════════════════
+   TOKENS & RESET
+════════════════════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap');
+
+:root {
+  /* surfaces */
+  --bg-app:       #0E0E0F;
+  --bg-sidebar:   #131315;
+  --bg-main:      #17171A;
+  --bg-card:      #1E1E22;
+  --bg-card-2:    #242428;
+  --bg-hover:     #2A2A2F;
+  --bg-input:     #1A1A1E;
+
+  /* borders */
+  --border:       rgba(255,255,255,0.07);
+  --border-2:     rgba(255,255,255,0.04);
+  --border-focus: rgba(255,255,255,0.18);
+
+  /* text */
+  --tx-1:   #F0EFEC;
+  --tx-2:   #A8A7A2;
+  --tx-3:   #65635E;
+  --tx-inv: #0E0E0F;
+
+  /* accent */
+  --accent:     #C8A96E;
+  --accent-lt:  rgba(200,169,110,0.12);
+  --accent-md:  rgba(200,169,110,0.25);
+
+  /* semantic */
+  --purple:     #7B74E8;
+  --purple-lt:  rgba(123,116,232,0.12);
+  --teal:       #2EC4A0;
+  --teal-lt:    rgba(46,196,160,0.10);
+  --red:        #E05C5C;
+  --red-lt:     rgba(224,92,92,0.10);
+  --amber:      #E09A3C;
+  --amber-lt:   rgba(224,154,60,0.10);
+  --blue:       #5B9CF6;
+  --blue-lt:    rgba(91,156,246,0.10);
+
+  /* status */
+  --status-done: #2EC4A0;
+  --status-now:  #C8A96E;
+  --status-todo: #65635E;
+
+  /* layout */
+  --sidebar-w:  220px;
+  --topbar-h:   44px;
+  --ctxbar-h:   36px;
+
+  /* type */
+  --font-ui:    'Instrument Sans', sans-serif;
+  --font-head:  'Syne', sans-serif;
+  --font-mono:  'JetBrains Mono', monospace;
+
+  /* radius */
+  --r-sm: 4px;
+  --r-md: 8px;
+  --r-lg: 12px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: var(--font-ui);
+  background: var(--bg-app);
+  color: var(--tx-1);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+button { font-family: inherit; cursor: pointer; }
+input, select { font-family: inherit; }
+
+/* ════════════════════════════════════════════════════════════
+   SCROLLBAR
+════════════════════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+
+/* ════════════════════════════════════════════════════════════
+   LAYOUT SHELL
+════════════════════════════════════════════════════════════ */
+.app {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  grid-template-rows: var(--topbar-h) var(--ctxbar-h) 1fr;
+  grid-template-areas:
+    "sidebar topbar"
+    "sidebar ctxbar"
+    "sidebar main";
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ════════════════════════════════════════════════════════════
+   TOP BAR
+════════════════════════════════════════════════════════════ */
+.topbar {
+  grid-area: topbar;
+  background: var(--bg-app);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  gap: 12px;
+}
+.topbar-left {
+  display: flex; align-items: center; gap: 10px;
+}
+.topbar-logo {
+  font-family: var(--font-head);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  color: var(--tx-1);
+}
+.topbar-logo span { color: var(--accent); }
+.topbar-divider {
+  width: 1px; height: 16px;
+  background: var(--border);
+}
+.topbar-module-name {
+  font-size: 12px;
+  color: var(--tx-2);
+  font-weight: 500;
+  transition: color .15s;
+}
+.topbar-right {
+  display: flex; align-items: center; gap: 8px;
+}
+.topbar-btn {
+  height: 26px;
+  padding: 0 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--tx-2);
+  font-size: 11px;
+  font-weight: 500;
+  display: flex; align-items: center; gap: 5px;
+  transition: all .15s;
+  text-decoration: none;
+}
+.topbar-btn:hover {
+  background: var(--bg-hover);
+  color: var(--tx-1);
+  border-color: var(--border-focus);
+}
+.topbar-btn svg { opacity: .7; }
+
+/* ════════════════════════════════════════════════════════════
+   CONTEXT BAR  (dataset status)
+════════════════════════════════════════════════════════════ */
+.ctxbar {
+  grid-area: ctxbar;
+  background: var(--bg-app);
+  border-bottom: 1px solid var(--border-2);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 16px;
+  transition: all .2s;
+}
+.ctxbar.has-data { background: rgba(46,196,160,0.04); }
+.ctx-item {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--tx-3);
+}
+.ctx-item.active { color: var(--tx-2); }
+.ctx-label {
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  font-size: 9px;
+  color: var(--tx-3);
+}
+.ctx-value { color: var(--tx-1); font-weight: 500; }
+.ctx-badge {
+  font-size: 10px;
+  padding: 1px 7px;
+  border-radius: 3px;
+  font-weight: 500;
+  font-family: var(--font-mono);
+  background: var(--teal-lt);
+  color: var(--teal);
+  border: 1px solid rgba(46,196,160,0.2);
+}
+.ctx-badge.no-schema {
+  background: var(--amber-lt);
+  color: var(--amber);
+  border-color: rgba(224,154,60,0.2);
+}
+.ctx-sep { width: 1px; height: 12px; background: var(--border); }
+.ctx-action {
+  font-size: 11px;
+  color: var(--tx-3);
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-mono);
+  margin-left: auto;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  transition: color .15s;
+}
+.ctx-action:hover { color: var(--tx-1); }
+
+/* ════════════════════════════════════════════════════════════
+   SIDEBAR
+════════════════════════════════════════════════════════════ */
+.sidebar {
+  grid-area: sidebar;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.sidebar-brand {
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.brand-name {
+  font-family: var(--font-head);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -.01em;
+  color: var(--tx-1);
+}
+.brand-name em { color: var(--accent); font-style: normal; }
+.brand-sub {
+  font-size: 10px;
+  color: var(--tx-3);
+  margin-top: 1px;
+  font-family: var(--font-mono);
+  letter-spacing: .03em;
+}
+.sidebar-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 0;
+}
+.sidebar-section-label {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--tx-3);
+  padding: 8px 16px 4px;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 16px;
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: all .12s;
+  user-select: none;
+}
+.nav-item:hover { background: var(--bg-hover); }
+.nav-item.active {
+  border-left-color: var(--accent);
+  background: var(--accent-lt);
+}
+.nav-item.disabled {
+  opacity: .35;
+  cursor: default;
+}
+.nav-item.disabled:hover { background: transparent; }
+.nav-icon {
+  width: 22px; height: 22px;
+  border-radius: var(--r-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+  transition: all .12s;
+}
+.nav-text {
+  flex: 1;
+  min-width: 0;
+}
+.nav-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--tx-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nav-item.disabled .nav-title { color: var(--tx-3); }
+.nav-sub {
+  font-size: 10px;
+  color: var(--tx-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nav-badge {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+.sidebar-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 8px 16px;
+}
+.sidebar-footer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  padding: 10px 16px;
+}
+.sidebar-footer-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--tx-2);
+  font-size: 11px;
+  font-weight: 500;
+  transition: all .15s;
+  cursor: pointer;
+  font-family: inherit;
+}
+.sidebar-footer-btn:hover {
+  background: var(--bg-hover);
+  color: var(--tx-1);
+  border-color: var(--border-focus);
+}
+.sidebar-footer-btn.disabled { opacity: .4; cursor: default; }
+.sidebar-footer-btn.disabled:hover { background: transparent; color: var(--tx-2); border-color: var(--border); }
+
+/* ════════════════════════════════════════════════════════════
+   MAIN CONTENT AREA
+════════════════════════════════════════════════════════════ */
+.main {
+  grid-area: main;
+  background: var(--bg-main);
+  overflow: hidden;
+  position: relative;
+}
+.module-pane {
+  display: none;
+  height: 100%;
+  overflow-y: auto;
+  padding: 24px 28px;
+  animation: fadeIn .18s ease;
+}
+.module-pane.active { display: block; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ════════════════════════════════════════════════════════════
+   EMPTY / LANDING STATE
+════════════════════════════════════════════════════════════ */
+.landing {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 40px;
+  text-align: center;
+}
+.landing-icon {
+  width: 56px; height: 56px;
+  border-radius: var(--r-lg);
+  background: var(--accent-lt);
+  border: 1px solid var(--accent-md);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 20px;
+  font-size: 22px;
+}
+.landing-title {
+  font-family: var(--font-head);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--tx-1);
+  margin-bottom: 8px;
+  letter-spacing: -.01em;
+}
+.landing-desc {
+  font-size: 13px;
+  color: var(--tx-2);
+  max-width: 380px;
+  line-height: 1.7;
+  margin-bottom: 28px;
+}
+.landing-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 32px;
+}
+.btn-primary {
+  height: 36px;
+  padding: 0 18px;
+  border-radius: var(--r-md);
+  background: var(--accent);
+  color: var(--tx-inv);
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  display: flex; align-items: center; gap: 7px;
+  transition: all .15s;
+  cursor: pointer;
+  font-family: inherit;
+}
+.btn-primary:hover { background: #D4B87A; transform: translateY(-1px); }
+.btn-secondary {
+  height: 36px;
+  padding: 0 16px;
+  border-radius: var(--r-md);
+  background: var(--bg-card);
+  color: var(--tx-1);
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  display: flex; align-items: center; gap: 7px;
+  transition: all .15s;
+  cursor: pointer;
+  font-family: inherit;
+}
+.btn-secondary:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-focus);
+}
+
+.landing-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  max-width: 520px;
+  width: 100%;
+}
+.landing-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 14px 16px;
+  text-align: left;
+  cursor: pointer;
+  transition: all .15s;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.landing-card:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-focus);
+  transform: translateY(-1px);
+}
+.landing-card-icon {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+.landing-card-body {}
+.landing-card-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--tx-1);
+  margin-bottom: 2px;
+}
+.landing-card-desc {
+  font-size: 11px;
+  color: var(--tx-3);
+  line-height: 1.5;
+}
+
+/* ════════════════════════════════════════════════════════════
+   MODULE HEADER (shared across all modules)
+════════════════════════════════════════════════════════════ */
+.module-header {
+  margin-bottom: 24px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.module-header-left {}
+.module-eyebrow {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--tx-3);
+  margin-bottom: 4px;
+}
+.module-title {
+  font-family: var(--font-head);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--tx-1);
+  letter-spacing: -.01em;
+  margin-bottom: 4px;
+}
+.module-desc {
+  font-size: 12px;
+  color: var(--tx-2);
+  line-height: 1.6;
+  max-width: 520px;
+}
+.module-header-right {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* ════════════════════════════════════════════════════════════
+   FRAMEWORK CALLOUT (teach-as-you-analyse)
+════════════════════════════════════════════════════════════ */
+.framework-callout {
+  background: var(--accent-lt);
+  border: 1px solid var(--accent-md);
+  border-radius: var(--r-md);
+  padding: 10px 14px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.framework-callout:hover { background: rgba(200,169,110,0.16); }
+.fc-icon {
+  font-size: 13px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.fc-body { flex: 1; }
+.fc-label {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--accent);
+  margin-bottom: 2px;
+}
+.fc-text {
+  font-size: 12px;
+  color: var(--tx-2);
+  line-height: 1.6;
+  max-width: 600px;
+}
+.fc-expand { font-size: 10px; color: var(--tx-3); margin-left: auto; flex-shrink: 0; }
+
+/* ════════════════════════════════════════════════════════════
+   CONFIGURATION PANEL
+════════════════════════════════════════════════════════════ */
+.config-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 16px 18px;
+  margin-bottom: 20px;
+}
+.config-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.config-panel-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--tx-3);
+}
+.config-collapse-btn {
+  font-size: 10px;
+  color: var(--tx-3);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: color .15s;
+}
+.config-collapse-btn:hover { color: var(--tx-1); }
+.config-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.config-field { display: flex; flex-direction: column; gap: 5px; }
+.config-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--tx-3);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.config-label .required { color: var(--red); margin-left: 2px; }
+.config-select, .config-input {
+  height: 32px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--tx-1);
+  font-size: 12px;
+  padding: 0 10px;
+  transition: border-color .15s;
+  outline: none;
+  width: 100%;
+  -webkit-appearance: none;
+}
+.config-select:focus, .config-input:focus {
+  border-color: var(--border-focus);
+}
+.config-select option { background: var(--bg-card-2); }
+.config-hint {
+  font-size: 10px;
+  color: var(--tx-3);
+  line-height: 1.4;
+}
+.config-run-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-2);
+}
+.btn-run {
+  height: 32px;
+  padding: 0 16px;
+  border-radius: var(--r-sm);
+  background: var(--accent);
+  color: var(--tx-inv);
+  font-size: 11px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  display: flex; align-items: center; gap: 6px;
+  transition: all .15s;
+  letter-spacing: .01em;
+}
+.btn-run:hover { background: #D4B87A; }
+.btn-run:disabled { opacity: .4; cursor: default; }
+.btn-run:disabled:hover { background: var(--accent); transform: none; }
+.run-hint { font-size: 11px; color: var(--tx-3); }
+
+/* ════════════════════════════════════════════════════════════
+   STAT CARDS ROW
+════════════════════════════════════════════════════════════ */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 14px 16px;
+  transition: border-color .15s;
+}
+.stat-card:hover { border-color: var(--border-focus); }
+.stat-label {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--tx-3);
+  margin-bottom: 6px;
+}
+.stat-value {
+  font-family: var(--font-head);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -.02em;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.stat-sub { font-size: 11px; color: var(--tx-3); }
+
+/* ════════════════════════════════════════════════════════════
+   OUTPUT ZONE
+════════════════════════════════════════════════════════════ */
+.output-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.output-grid.single { grid-template-columns: 1fr; }
+.output-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+.output-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-2);
+}
+.output-card-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--tx-2);
+}
+.output-card-export {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--tx-3);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  transition: all .15s;
+}
+.output-card-export:hover { background: var(--bg-hover); color: var(--tx-1); border-color: var(--border-focus); }
+.output-card-body {
+  padding: 16px;
+}
+.output-empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--tx-3);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.output-empty-icon { font-size: 24px; margin-bottom: 8px; opacity: .4; }
+
+/* ════════════════════════════════════════════════════════════
+   DATA TABLE
+════════════════════════════════════════════════════════════ */
+.data-table-wrap {
+  overflow-x: auto;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+}
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.data-table th {
+  background: var(--bg-card-2);
+  padding: 9px 12px;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--tx-3);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition: color .12s;
+}
+.data-table th:hover { color: var(--tx-1); }
+.data-table th.sorted { color: var(--accent); }
+.data-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border-2);
+  color: var(--tx-2);
+  white-space: nowrap;
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: var(--bg-hover); color: var(--tx-1); cursor: pointer; }
+.data-table .td-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-align: right;
+}
+.data-table .td-pct { color: var(--red); font-family: var(--font-mono); font-size: 11px; text-align: right; }
+.data-table .td-ok  { color: var(--teal); font-family: var(--font-mono); font-size: 11px; text-align: right; }
+
+/* ════════════════════════════════════════════════════════════
+   EXPORT BAR
+════════════════════════════════════════════════════════════ */
+.export-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0 4px;
+  border-top: 1px solid var(--border-2);
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.export-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--tx-3);
+  font-family: var(--font-mono);
+  margin-right: 4px;
+}
+.export-btn {
+  height: 28px;
+  padding: 0 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--tx-2);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  display: flex; align-items: center; gap: 5px;
+  transition: all .15s;
+}
+.export-btn:hover { background: var(--bg-hover); color: var(--tx-1); border-color: var(--border-focus); }
+.export-btn.add-to-session {
+  border-color: rgba(200,169,110,0.3);
+  color: var(--accent);
+}
+.export-btn.add-to-session:hover { background: var(--accent-lt); border-color: var(--accent-md); }
+.export-btn:disabled { opacity: .35; cursor: default; }
+.export-btn:disabled:hover { background: var(--bg-card); color: var(--tx-2); border-color: var(--border); }
+
+/* ════════════════════════════════════════════════════════════
+   UPLOAD ZONE
+════════════════════════════════════════════════════════════ */
+.upload-zone {
+  border: 1.5px dashed var(--border);
+  border-radius: var(--r-lg);
+  padding: 32px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .15s;
+  background: var(--bg-card);
+}
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--accent);
+  background: var(--accent-lt);
+}
+.upload-zone-icon { font-size: 28px; margin-bottom: 10px; }
+.upload-zone-title { font-size: 13px; font-weight: 500; color: var(--tx-1); margin-bottom: 4px; }
+.upload-zone-desc { font-size: 11px; color: var(--tx-3); line-height: 1.5; }
+.upload-zone-formats {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 10px;
+}
+.format-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  background: var(--bg-card-2);
+  border: 1px solid var(--border);
+  color: var(--tx-3);
+}
+.upload-hidden { display: none; }
+
+/* ════════════════════════════════════════════════════════════
+   SCHEMA MAPPING WIZARD
+════════════════════════════════════════════════════════════ */
+.wizard-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s;
+}
+.wizard-overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+.wizard-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-focus);
+  border-radius: var(--r-lg);
+  width: 100%;
+  max-width: 560px;
+  max-height: 80vh;
+  overflow-y: auto;
+  transform: translateY(8px);
+  transition: transform .2s;
+}
+.wizard-overlay.open .wizard-panel { transform: translateY(0); }
+.wizard-header {
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.wizard-title {
+  font-family: var(--font-head);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--tx-1);
+  letter-spacing: -.01em;
+  margin-bottom: 2px;
+}
+.wizard-sub { font-size: 12px; color: var(--tx-3); line-height: 1.5; }
+.wizard-close {
+  width: 24px; height: 24px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-card-2);
+  color: var(--tx-3);
+  font-size: 14px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: all .15s;
+}
+.wizard-close:hover { background: var(--bg-hover); color: var(--tx-1); }
+.wizard-body { padding: 18px 20px; }
+.wizard-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.wizard-field {
+  background: var(--bg-card-2);
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+}
+.wizard-field-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--tx-3);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.wizard-field-label .req { color: var(--red); }
+.wizard-field-label .opt { color: var(--tx-3); font-weight: 400; }
+.wizard-select {
+  width: 100%;
+  height: 30px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--tx-1);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  padding: 0 8px;
+  outline: none;
+  transition: border-color .15s;
+  -webkit-appearance: none;
+}
+.wizard-select:focus { border-color: var(--border-focus); }
+.wizard-select.suggested { border-color: rgba(46,196,160,0.4); }
+.wizard-inferred {
+  font-size: 9px;
+  color: var(--teal);
+  margin-top: 3px;
+  font-family: var(--font-mono);
+}
+.wizard-footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.wizard-confirm-btn {
+  height: 34px;
+  padding: 0 18px;
+  border-radius: var(--r-sm);
+  background: var(--accent);
+  color: var(--tx-inv);
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .15s;
+}
+.wizard-confirm-btn:hover { background: #D4B87A; }
+.wizard-save-btn {
+  height: 34px;
+  padding: 0 14px;
+  border-radius: var(--r-sm);
+  background: var(--bg-card-2);
+  color: var(--tx-2);
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .15s;
+}
+.wizard-save-btn:hover { background: var(--bg-hover); color: var(--tx-1); border-color: var(--border-focus); }
+
+/* ════════════════════════════════════════════════════════════
+   QUALITY PANEL
+════════════════════════════════════════════════════════════ */
+.quality-banner {
+  border-radius: var(--r-md);
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+}
+.quality-banner.good { background: var(--teal-lt); border: 1px solid rgba(46,196,160,0.2); color: var(--teal); }
+.quality-banner.warn { background: var(--amber-lt); border: 1px solid rgba(224,154,60,0.2); color: var(--amber); }
+.quality-banner.bad  { background: var(--red-lt);   border: 1px solid rgba(224,92,92,0.2);  color: var(--red); }
+.quality-score {
+  font-family: var(--font-head);
+  font-size: 20px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.quality-body { flex: 1; }
+.quality-title { font-weight: 500; margin-bottom: 2px; }
+.quality-desc { font-size: 11px; opacity: .8; }
+
+/* ════════════════════════════════════════════════════════════
+   NO DATA STATE (per module)
+════════════════════════════════════════════════════════════ */
+.no-data-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  gap: 10px;
+  min-height: 300px;
+}
+.no-data-icon {
+  font-size: 32px;
+  opacity: .25;
+  margin-bottom: 4px;
+}
+.no-data-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--tx-2);
+}
+.no-data-desc {
+  font-size: 12px;
+  color: var(--tx-3);
+  max-width: 280px;
+  line-height: 1.6;
+}
+.no-data-action {
+  margin-top: 4px;
+}
+
+/* ════════════════════════════════════════════════════════════
+   TOAST NOTIFICATIONS
+════════════════════════════════════════════════════════════ */
+.toast-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  background: var(--bg-card-2);
+  border: 1px solid var(--border-focus);
+  border-radius: var(--r-md);
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--tx-1);
+  max-width: 300px;
+  animation: toastIn .2s ease;
+  pointer-events: all;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.toast.success { border-color: rgba(46,196,160,0.3); }
+.toast.error   { border-color: rgba(224,92,92,0.3); }
+.toast.warning { border-color: rgba(224,154,60,0.3); }
+.toast-icon { flex-shrink: 0; font-size: 13px; }
+.toast-msg { flex: 1; line-height: 1.4; }
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ════════════════════════════════════════════════════════════
+   UTILITY
+════════════════════════════════════════════════════════════ */
+.tag {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  font-weight: 500;
+  font-family: var(--font-mono);
+  display: inline-flex;
+  align-items: center;
+}
+.tag-phase-1 { background: var(--purple-lt); color: var(--purple); }
+.tag-phase-2 { background: var(--teal-lt);   color: var(--teal); }
+.tag-phase-3 { background: var(--amber-lt);  color: var(--amber); }
+.tag-phase-4 { background: var(--blue-lt);   color: var(--blue); }
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.separator { height: 1px; background: var(--border); margin: 16px 0; }
+
+.text-muted { color: var(--tx-3); }
+.text-accent { color: var(--accent); }
+.text-teal   { color: var(--teal); }
+.text-red    { color: var(--red); }
+.text-mono   { font-family: var(--font-mono); }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════
+     APP SHELL
+════════════════════════════════════════════════════════════ -->
+<div class="app" id="app">
+
+  <!-- ── TOP BAR ── -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">Pricing<em>Analyser</em></div>
+      <div class="topbar-divider"></div>
+      <div class="topbar-module-name" id="topbar-module-name">Select a module</div>
+    </div>
+    <div class="topbar-right">
+      <a href="../databridge/databridge.html" class="topbar-btn" title="Open DataBridge">
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+          <path d="M2 6h8M6 2v8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        DataBridge
+      </a>
+      <button class="topbar-btn" id="btn-load-data" onclick="UI.openUpload()">
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+          <path d="M6 8V2M3 5l3-3 3 3M2 10h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Load data
+      </button>
+      <button class="topbar-btn" id="btn-session-export" disabled style="opacity:.4">
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+          <path d="M2 9h8M6 2v5M3 5l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Export session
+      </button>
+    </div>
+  </header>
+
+  <!-- ── CONTEXT BAR ── -->
+  <div class="ctxbar" id="ctxbar">
+    <div class="ctx-item" id="ctx-dataset">
+      <span class="ctx-label">Dataset</span>
+      <span class="ctx-value" id="ctx-dataset-name">—</span>
+    </div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item" id="ctx-rows">
+      <span class="ctx-label">Rows</span>
+      <span class="ctx-value" id="ctx-row-count">—</span>
+    </div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item" id="ctx-cols">
+      <span class="ctx-label">Cols</span>
+      <span class="ctx-value" id="ctx-col-count">—</span>
+    </div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item" id="ctx-schema-item">
+      <span class="ctx-label">Schema</span>
+      <span class="ctx-badge no-schema" id="ctx-schema-badge">Not mapped</span>
+    </div>
+    <button class="ctx-action" id="ctx-change-btn" onclick="UI.openUpload()" style="display:none">change dataset</button>
+  </div>
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-name">Pricing<em>Analyser</em></div>
+      <div class="brand-sub">commercial analytics workbench · v0.1</div>
+    </div>
+
+    <div class="sidebar-body" id="sidebar-nav">
+      <!-- nav items injected by JS -->
+    </div>
+
+    <div class="sidebar-footer">
+      <button class="sidebar-footer-btn disabled" id="btn-pdf-export" disabled>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <rect x="2" y="1" width="7" height="9" rx="1" stroke="currentColor" stroke-width="1.2"/>
+          <path d="M4 4h4M4 6h4M4 8h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+        Export session PDF
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── MAIN AREA ── -->
+  <main class="main" id="main">
+
+    <!-- LANDING / EMPTY STATE -->
+    <div class="module-pane active" id="pane-landing">
+      <div class="landing">
+        <div class="landing-icon">◈</div>
+        <div class="landing-title">Pricing Analyser</div>
+        <div class="landing-desc">A commercial analytics workbench for strategy professionals. Load a transaction dataset to begin, or explore the Behavioural Lab with no data required.</div>
+        <div class="landing-actions">
+          <button class="btn-primary" onclick="UI.openUpload()">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+              <path d="M6.5 9V2M3 5l3.5-3.5L10 5M2 11h9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Load dataset
+          </button>
+          <button class="btn-secondary" onclick="Data.loadSample()">
+            Load sample data
+          </button>
+          <button class="btn-secondary" onclick="Modules.activate('m8')">
+            Open Behavioural Lab →
+          </button>
+        </div>
+        <div class="landing-grid">
+          <div class="landing-card" onclick="Modules.activate('m1')">
+            <div class="landing-card-icon" style="background:var(--purple-lt);color:var(--purple)">M1</div>
+            <div class="landing-card-body">
+              <div class="landing-card-title">Price waterfall</div>
+              <div class="landing-card-desc">List price to pocket price. Identify and quantify leakage sources.</div>
+            </div>
+          </div>
+          <div class="landing-card" onclick="Modules.activate('m4')">
+            <div class="landing-card-icon" style="background:var(--blue-lt);color:var(--blue)">M4</div>
+            <div class="landing-card-body">
+              <div class="landing-card-title">Margin decomposition</div>
+              <div class="landing-card-desc">Breakeven analysis and what-if scenario modelling.</div>
+            </div>
+          </div>
+          <div class="landing-card" onclick="Modules.activate('m2')">
+            <div class="landing-card-icon" style="background:var(--teal-lt);color:var(--teal)">M2</div>
+            <div class="landing-card-body">
+              <div class="landing-card-title">Price band analysis</div>
+              <div class="landing-card-desc">OLS regression to surface unwarranted discounting. Phase 2.</div>
+            </div>
+          </div>
+          <div class="landing-card" onclick="Modules.activate('m8')">
+            <div class="landing-card-icon" style="background:var(--amber-lt);color:var(--amber)">M8</div>
+            <div class="landing-card-body">
+              <div class="landing-card-title">Behavioural lab</div>
+              <div class="landing-card-desc">Stress-test pricing structures against buyer psychology. No data needed.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODULE PANES — injected by each module file -->
+    <div class="module-pane" id="pane-m1"></div>
+    <div class="module-pane" id="pane-m2"></div>
+    <div class="module-pane" id="pane-m3"></div>
+    <div class="module-pane" id="pane-m4"></div>
+    <div class="module-pane" id="pane-m5"></div>
+    <div class="module-pane" id="pane-m6"></div>
+    <div class="module-pane" id="pane-m7"></div>
+    <div class="module-pane" id="pane-m8"></div>
+
+  </main>
+</div>
+
+<!-- ── UPLOAD INPUT (hidden) ── -->
+<input type="file" class="upload-hidden" id="file-input" accept=".csv,.tsv,.xlsx,.xls">
+
+<!-- ── SCHEMA WIZARD OVERLAY ── -->
+<div class="wizard-overlay" id="schema-wizard">
+  <div class="wizard-panel">
+    <div class="wizard-header">
+      <div>
+        <div class="wizard-title">Map your columns</div>
+        <div class="wizard-sub">Assign your dataset's columns to the pricing schema. Suggested matches are pre-filled — confirm or override each one.</div>
+      </div>
+      <button class="wizard-close" onclick="UI.closeWizard()">✕</button>
+    </div>
+    <div class="wizard-body" id="wizard-body">
+      <!-- injected by Schema.renderWizard() -->
+    </div>
+    <div class="wizard-footer">
+      <button class="wizard-confirm-btn" onclick="Schema.confirmMapping()">Confirm mapping</button>
+      <button class="wizard-save-btn" onclick="Schema.saveProfile()">Save as profile</button>
+      <span style="margin-left:auto;font-size:11px;color:var(--tx-3)" id="wizard-validation-msg"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST CONTAINER ── -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ── MODULE SCRIPTS ── -->
+<script src="m1-waterfall.js"></script>
+<script src="m2-pricebands.js"></script>
+<script src="m3-governance.js"></script>
+<script src="m4-margin.js"></script>
+<script src="m5-eve.js"></script>
+<script src="m6-saas.js"></script>
+<script src="m7-competitive.js"></script>
+<script src="m8-behavlab.js"></script>
+
+<!-- ════════════════════════════════════════════════════════════
+     APP STATE
+════════════════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+// ── Single source of truth ──────────────────────────────────
+const AppState = {
+  dataset:       null,   // { rows:[], columns:[], source:'', rowCount:0 }
+  schema:        null,   // { listPrice, invoicePrice, cost, qty, rep, region, product, tier, date, discountLayers:[] }
+  quality:       null,   // { score:0-100, issues:[], warnings:[] }
+  activeModule:  'landing',
+  results:       {},     // { m1:{}, m4:{}, ... }
+  sessionExport: [],     // outputs queued for PDF
+  schemaProfiles: JSON.parse(localStorage.getItem('pa_schema_profiles') || '[]'),
+
+  // ── Mutations ──
+  setDataset(data) {
+    this.dataset = data;
+    this.schema  = null;
+    this.quality = null;
+    this.results = {};
+    UI.updateContextBar();
+    UI.updateSidebarState();
+  },
+  setSchema(mapping) {
+    this.schema = mapping;
+    UI.updateContextBar();
+    UI.updateSidebarState();
+    Toast.success('Schema mapped — analytical modules unlocked');
+  },
+  setQuality(q) {
+    this.quality = q;
+  },
+  setResult(moduleId, result) {
+    this.results[moduleId] = result;
+    if (!this.sessionExport.find(e => e.module === moduleId)) {
+      this.sessionExport.push({ module: moduleId, result });
+    }
+    UI.updateExportButton();
+  },
+  clearDataset() {
+    this.dataset = null;
+    this.schema  = null;
+    this.quality = null;
+    this.results = {};
+    this.sessionExport = [];
+    UI.updateContextBar();
+    UI.updateSidebarState();
+    UI.updateExportButton();
+  }
+};
+</script>
+
+<!-- ════════════════════════════════════════════════════════════
+     MODULE REGISTRY
+════════════════════════════════════════════════════════════ -->
+<script>
+// ── Module definitions ──────────────────────────────────────
+const MODULE_REGISTRY = [
+  {
+    id: 'm1',
+    name: 'Price waterfall',
+    sub: 'List price → pocket price',
+    group: 'diagnostic',
+    phase: 1,
+    requiresData: true,
+    requiresSchema: true,
+    iconBg: 'var(--purple-lt)',
+    iconColor: 'var(--purple)',
+    description: 'Maps every discount and concession between list price and pocket price. Identifies profit leakage sources and quantifies their magnitude across the customer portfolio.',
+    framework: 'Price waterfall analysis — maps the cascade from list price to pocket price, surfacing every discount layer and concession that erodes margin between invoice and cash receipt.'
+  },
+  {
+    id: 'm4',
+    name: 'Margin decomposition',
+    sub: 'Breakeven · what-if · CM',
+    group: 'diagnostic',
+    phase: 1,
+    requiresData: false,
+    requiresSchema: false,
+    iconBg: 'var(--blue-lt)',
+    iconColor: 'var(--blue)',
+    description: 'Contribution margin, breakeven analysis, and 9-scenario what-if modelling. Quantifies the volume impact of any proposed price change.',
+    framework: 'Breakeven analysis — calculates the required volume change to maintain profitability after a price move, using the contribution margin formula: −ΔP ÷ (CM + ΔP).'
+  },
+  {
+    id: 'm2',
+    name: 'Price band analysis',
+    sub: 'Regression · outliers · recovery',
+    group: 'diagnostic',
+    phase: 2,
+    requiresData: true,
+    requiresSchema: true,
+    iconBg: 'var(--teal-lt)',
+    iconColor: 'var(--teal)',
+    description: 'OLS regression of discount % against legitimate factors to identify unwarranted discounting. Quantifies recoverable margin from pulling outliers to the peer price band.',
+    framework: 'Price band regression — plots actual prices against statistically-derived peer prices to identify customers receiving discounts beyond what volume, region, or tier would justify.'
+  },
+  {
+    id: 'm3',
+    name: 'Discount governance',
+    sub: 'Policy · compliance · violations',
+    group: 'diagnostic',
+    phase: 2,
+    requiresData: true,
+    requiresSchema: true,
+    iconBg: 'var(--red-lt)',
+    iconColor: 'var(--red)',
+    description: 'Live discount governance monitoring. Configure policy rules and score every transaction for compliance. Surfaces violations by rep, region, and product.',
+    framework: 'Discount governance — converts pricing policy rules into a live compliance monitor, scoring transactions against approved discount ceilings and flagging escalation cases.'
+  },
+  {
+    id: 'm5',
+    name: 'Economic value',
+    sub: 'EVE model · positioning · sensitivity',
+    group: 'strategic',
+    phase: 2,
+    requiresData: false,
+    requiresSchema: false,
+    iconBg: 'var(--amber-lt)',
+    iconColor: 'var(--amber)',
+    description: 'Economic value estimation, price floor/ceiling calculation, strategic positioning selection, and price sensitivity scoring.',
+    framework: 'Economic value estimation — models the total economic value of a product to a customer as the sum of a reference price and differentiation value, establishing a rational pricing range.'
+  },
+  {
+    id: 'm6',
+    name: 'SaaS pricing studio',
+    sub: 'Metrics · packaging · ARR · VW',
+    group: 'strategic',
+    phase: 3,
+    requiresData: false,
+    requiresSchema: false,
+    iconBg: 'var(--teal-lt)',
+    iconColor: 'var(--teal)',
+    description: 'Pricing metric design, packaging architecture, wallet structuring, Van Westendorp simulation, ARR impact modelling, and grandfathering planning.',
+    framework: 'SaaS commercial design — structures pricing around how customers derive value and how they budget, rather than around cost or competitive benchmarks.'
+  },
+  {
+    id: 'm8',
+    name: 'Behavioural lab',
+    sub: 'Buyer psychology · bias audit',
+    group: 'strategic',
+    phase: 3,
+    requiresData: false,
+    requiresSchema: false,
+    iconBg: 'var(--amber-lt)',
+    iconColor: 'var(--amber)',
+    description: 'Stress-test pricing structures against 8 buyer psychology biases: anchoring, decoy effect, zero price, social norms, endowment, power of price, expectations, option complexity.',
+    framework: 'Behavioural pricing — applies experimental findings from consumer psychology research to identify structural weaknesses in how a pricing architecture is perceived and processed by buyers.'
+  },
+  {
+    id: 'm7',
+    name: 'Competitive intelligence',
+    sub: 'Positioning · response · war risk',
+    group: 'strategic',
+    phase: 4,
+    requiresData: false,
+    requiresSchema: false,
+    iconBg: 'var(--purple-lt)',
+    iconColor: 'var(--purple)',
+    description: 'Competitive price ladder, price war risk assessment, and structured response frameworks for competitive pricing moves.',
+    framework: 'Competitive response analysis — evaluates the risk of competitive retaliation and models the P&L cost of alternative responses to a competitor price move.'
+  }
+];
+
+// ── Module manager ──────────────────────────────────────────
+const Modules = {
+
+  activate(id) {
+    const mod = MODULE_REGISTRY.find(m => m.id === id);
+    if (!mod) return;
+
+    // Guard: data required?
+    if (mod.requiresData && !AppState.dataset) {
+      Toast.warning('Load a dataset first to use this module');
+      UI.openUpload();
+      return;
+    }
+    // Guard: schema required?
+    if (mod.requiresSchema && !AppState.schema) {
+      Toast.warning('Map your column schema first');
+      UI.openWizard();
+      return;
+    }
+
+    // Deactivate all panes
+    document.querySelectorAll('.module-pane').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+    // Activate target pane
+    const pane = document.getElementById('pane-' + id);
+    if (pane) pane.classList.add('active');
+
+    // Activate nav item
+    const navItem = document.querySelector('.nav-item[data-module="' + id + '"]');
+    if (navItem) navItem.classList.add('active');
+
+    // Update top bar
+    document.getElementById('topbar-module-name').textContent = mod.name;
+
+    AppState.activeModule = id;
+
+    // Init module if it has an init function
+    if (window['Module_' + id] && typeof window['Module_' + id].init === 'function') {
+      window['Module_' + id].init();
+    } else {
+      // Render placeholder for unbuilt modules
+      this._renderPlaceholder(id, mod, pane);
+    }
+  },
+
+  _renderPlaceholder(id, mod, pane) {
+    const phaseLabel = { 1: 'Phase 1', 2: 'Phase 2', 3: 'Phase 3', 4: 'Phase 4' };
+    const phaseClass = { 1: 'tag-phase-1', 2: 'tag-phase-2', 3: 'tag-phase-3', 4: 'tag-phase-4' };
+    pane.innerHTML = `
+      <div class="module-header">
+        <div class="module-header-left">
+          <div class="module-eyebrow">Module ${id.toUpperCase()}</div>
+          <div class="module-title">${mod.name}</div>
+          <div class="module-desc">${mod.description}</div>
+        </div>
+        <div class="module-header-right">
+          <span class="tag ${phaseClass[mod.phase]}">${phaseLabel[mod.phase]}</span>
+        </div>
+      </div>
+      <div class="framework-callout">
+        <div class="fc-icon">◎</div>
+        <div class="fc-body">
+          <div class="fc-label">Framework</div>
+          <div class="fc-text">${mod.framework}</div>
+        </div>
+      </div>
+      <div class="no-data-state">
+        <div class="no-data-icon">⚠</div>
+        <div class="no-data-title">Module file not loaded</div>
+        <div class="no-data-desc">Could not find ${mod.name} module. Ensure ${id}-*.js is in the same directory as index.html.</div>
+      </div>`;
+  }
+};
+</script>
+
+<!-- ════════════════════════════════════════════════════════════
+     DATA ENGINE
+════════════════════════════════════════════════════════════ -->
+<script>
+const Data = {
+
+  // ── File upload entry point ─────────────────────────────
+  handleFile(file) {
+    if (!file) return;
+    const ext = file.name.split('.').pop().toLowerCase();
+    Toast.info('Reading ' + file.name + '…');
+
+    if (ext === 'csv' || ext === 'tsv') {
+      this._parseCSV(file);
+    } else if (ext === 'xlsx' || ext === 'xls') {
+      this._parseXLSX(file);
+    } else {
+      Toast.error('Unsupported format — use CSV, TSV, or XLSX');
+    }
+  },
+
+  _parseCSV(file) {
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      dynamicTyping: true,
+      complete: (result) => {
+        if (result.errors.length > 0 && result.data.length === 0) {
+          Toast.error('Could not parse file — check it is a valid CSV');
+          return;
+        }
+        this._ingest(result.data, result.meta.fields, file.name);
+      },
+      error: (err) => Toast.error('Parse error: ' + err.message)
+    });
+  },
+
+  _parseXLSX(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const wb = XLSX.read(e.target.result, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json(ws, { defval: null });
+        const cols = data.length > 0 ? Object.keys(data[0]) : [];
+        this._ingest(data, cols, file.name);
+      } catch(err) {
+        Toast.error('Could not read XLSX: ' + err.message);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  },
+
+  _ingest(rows, columns, source) {
+    if (!rows || rows.length === 0) {
+      Toast.error('File is empty or could not be read');
+      return;
+    }
+
+    AppState.setDataset({
+      rows,
+      columns,
+      source,
+      rowCount: rows.length
+    });
+
+    Toast.success('Loaded ' + rows.length.toLocaleString() + ' rows from ' + source);
+
+    // Auto-suggest schema mapping
+    const mapping = Schema.suggest(columns, rows.slice(0, 10));
+    const hasGoodSuggestions = Object.values(mapping).filter(Boolean).length >= 2;
+    if (hasGoodSuggestions) {
+      setTimeout(() => UI.openWizard(), 400);
+    }
+  },
+
+  // ── Sample data ─────────────────────────────────────────
+  loadSample() {
+    Toast.info('Loading sample dataset…');
+    // Synthetic NAPA-style B2B transaction data
+    const REPS    = ['Adams', 'Chen', 'Davis', 'Evans', 'Foster', 'Garcia', 'Hall', 'Ivanov'];
+    const REGIONS = ['Northeast', 'Southeast', 'Midwest', 'Southwest', 'West'];
+    const TIERS   = ['Gold', 'Silver', 'Bronze', 'Standard'];
+    const PRODUCTS= ['Oil Filter', 'Brake Pad', 'Air Filter', 'Wiper Blade', 'Spark Plug', 'Battery'];
+
+    const rand  = (min, max) => Math.random() * (max - min) + min;
+    const pick  = arr => arr[Math.floor(Math.random() * arr.length)];
+    const round = (n, d=2) => Math.round(n * 10**d) / 10**d;
+
+    const rows = [];
+    for (let i = 0; i < 2000; i++) {
+      const list_price   = round(rand(8, 95));
+      const vol_disc     = round(rand(0.03, 0.15), 4);
+      const pay_terms    = round(rand(0.00, 0.05), 4);
+      const rep_disc     = round(rand(0.00, 0.15), 4);  // rep discretionary — largest variance layer
+      const freight      = round(rand(0.00, 0.04), 4);
+      const invoice_price= round(list_price * (1 - vol_disc - pay_terms - rep_disc - freight), 2);
+      const variable_cost= round(list_price * rand(0.35, 0.55), 2);
+      const qty          = Math.floor(rand(1, 200));
+      const rep          = pick(REPS);
+      const region       = pick(REGIONS);
+      const tier         = pick(TIERS);
+      const product      = pick(PRODUCTS);
+      const date         = new Date(2024, Math.floor(rand(0, 12)), Math.floor(rand(1, 28)));
+
+      rows.push({
+        transaction_id:   'TXN' + String(i + 1000).padStart(6, '0'),
+        date:             date.toISOString().split('T')[0],
+        customer_id:      'CUST' + String(Math.floor(rand(1, 400))).padStart(4, '0'),
+        product:          product,
+        region:           region,
+        customer_tier:    tier,
+        sales_rep:        rep,
+        quantity:         qty,
+        list_price:       list_price,
+        volume_discount:  vol_disc,
+        payment_terms:    pay_terms,
+        rep_discretionary:rep_disc,
+        freight_waiver:   freight,
+        invoice_price:    invoice_price,
+        variable_cost:    variable_cost
+      });
+    }
+
+    const columns = Object.keys(rows[0]);
+    this._ingest(rows, columns, 'sample-b2b-transactions.csv');
+  },
+
+  // ── Quality scoring ─────────────────────────────────────
+  scoreQuality(rows, schema) {
+    const issues   = [];
+    const warnings = [];
+    let   score    = 100;
+
+    if (!rows || rows.length === 0) return { score: 0, issues: ['No data'], warnings: [] };
+
+    // Null counts on key columns
+    const keyCols = [schema.listPrice, schema.invoicePrice].filter(Boolean);
+    keyCols.forEach(col => {
+      const nulls = rows.filter(r => r[col] == null || r[col] === '').length;
+      const pct   = nulls / rows.length;
+      if (pct > 0.1) { issues.push(col + ' has ' + Math.round(pct*100) + '% nulls'); score -= 15; }
+      else if (pct > 0) { warnings.push(col + ' has ' + nulls + ' null values'); score -= 5; }
+    });
+
+    // Negative prices
+    if (schema.invoicePrice) {
+      const neg = rows.filter(r => (r[schema.invoicePrice] || 0) < 0).length;
+      if (neg > 0) { warnings.push(neg + ' rows with negative invoice price'); score -= 5; }
+    }
+
+    // Pocket price < cost (negative margin)
+    if (schema.invoicePrice && schema.variableCost) {
+      const negMargin = rows.filter(r => (r[schema.invoicePrice] || 0) < (r[schema.variableCost] || 0)).length;
+      if (negMargin > 0) { warnings.push(negMargin + ' rows with invoice price below variable cost'); score -= 3; }
+    }
+
+    score = Math.max(0, Math.min(100, score));
+    AppState.setQuality({ score, issues, warnings });
+    return { score, issues, warnings };
+  }
+};
+</script>
+
+<!-- ════════════════════════════════════════════════════════════
+     SCHEMA ENGINE
+════════════════════════════════════════════════════════════ -->
+<script>
+const Schema = {
+
+  // ── Column type inference ───────────────────────────────
+  inferTypes(columns, sampleRows) {
+    const types = {};
+    columns.forEach(col => {
+      const vals = sampleRows.map(r => r[col]).filter(v => v != null && v !== '');
+      if (vals.length === 0) { types[col] = 'unknown'; return; }
+
+      const numericVals  = vals.filter(v => !isNaN(parseFloat(v)));
+      const numericRatio = numericVals.length / vals.length;
+
+      if (numericRatio > 0.8) {
+        const nums  = numericVals.map(parseFloat);
+        const max   = Math.max(...nums);
+        const min   = Math.min(...nums);
+        if (max <= 1 && min >= 0) types[col] = 'percent';
+        else if (max > 1)          types[col] = 'currency';
+        else                       types[col] = 'numeric';
+      } else {
+        const isDate = vals.every(v => !isNaN(Date.parse(String(v))));
+        types[col] = isDate ? 'date' : 'categorical';
+      }
+    });
+    return types;
+  },
+
+  // ── Smart column suggestion ─────────────────────────────
+  suggest(columns, sampleRows) {
+    const types   = this.inferTypes(columns, sampleRows);
+    const mapping = {};
+    const lower   = c => c.toLowerCase().replace(/[_\s-]/g, '');
+
+    // Scoring function: matches keywords against column name
+    const score = (col, keywords) => keywords.reduce((s, kw) => s + (lower(col).includes(kw) ? 1 : 0), 0);
+
+    const currCols = columns.filter(c => types[c] === 'currency' || types[c] === 'numeric');
+    const pctCols  = columns.filter(c => types[c] === 'percent');
+    const catCols  = columns.filter(c => types[c] === 'categorical');
+    const dateCols = columns.filter(c => types[c] === 'date');
+
+    // Best match helper
+    const best = (candidates, keywords) => {
+      let top = null, topScore = 0;
+      candidates.forEach(c => {
+        const s = score(c, keywords);
+        if (s > topScore) { top = c; topScore = s; }
+      });
+      return top;
+    };
+
+    mapping.listPrice    = best(currCols, ['list','msrp','retail','base','standard']);
+    mapping.invoicePrice = best(currCols, ['invoice','actual','net','sell','pocket']);
+    mapping.variableCost = best(currCols, ['cost','cogs','variable','unit']);
+    mapping.quantity     = best(columns.filter(c => types[c]==='numeric'||types[c]==='currency'), ['qty','quantity','units','volume']);
+    mapping.salesRep     = best(catCols, ['rep','agent','salesperson','owner','seller']);
+    mapping.region       = best(catCols, ['region','territory','area','zone','geo']);
+    mapping.customerTier = best(catCols, ['tier','segment','grade','class','type','category']);
+    mapping.product      = best(catCols, ['product','sku','item','part','category']);
+    mapping.date         = dateCols[0] || best(columns, ['date','time','period','month']);
+
+    // Discount layer columns (all percent columns not assigned above)
+    const assignedCols = Object.values(mapping).filter(Boolean);
+    mapping.discountLayers = pctCols
+      .filter(c => !assignedCols.includes(c))
+      .map(c => ({ column: c, name: this._formatLayerName(c), type: 'percent' }))
+      .slice(0, 8); // max 8 layers
+
+    this._currentSuggestion = mapping;
+    return mapping;
+  },
+
+  _formatLayerName(col) {
+    return col.replace(/[_\-]/g,' ')
+              .replace(/\b\w/g, l => l.toUpperCase())
+              .replace(/disc(ount)?/i, 'Discount')
+              .replace(/waiver/i, 'Waiver');
+  },
+
+  // ── Render wizard UI ────────────────────────────────────
+  renderWizard() {
+    const cols    = AppState.dataset?.columns || [];
+    const mapping = this._currentSuggestion || this.suggest(cols, AppState.dataset?.rows?.slice(0,10) || []);
+    const types   = this.inferTypes(cols, AppState.dataset?.rows?.slice(0,10) || []);
+
+    const opts = (selected) => '<option value="">— not mapped —</option>' +
+      cols.map(c => `<option value="${c}" ${c === selected ? 'selected' : ''}>${c} <span style="color:var(--tx-3)">(${types[c] || '?'})</span></option>`).join('');
+
+    const isSuggested = (val, key) => mapping[key] === val ? 'suggested' : '';
+    const suggestedNote = (key) => mapping[key] ? `<div class="wizard-inferred">✓ suggested from column name</div>` : '';
+
+    document.getElementById('wizard-body').innerHTML = `
+      <div class="wizard-field-row">
+        <div class="wizard-field">
+          <div class="wizard-field-label">List price <span class="req">*required</span></div>
+          <select class="wizard-select ${isSuggested(mapping.listPrice,'listPrice')}" id="wf-listPrice">
+            ${opts(mapping.listPrice)}
+          </select>
+          ${suggestedNote('listPrice')}
+        </div>
+        <div class="wizard-field">
+          <div class="wizard-field-label">Invoice / net price <span class="req">*required</span></div>
+          <select class="wizard-select ${isSuggested(mapping.invoicePrice,'invoicePrice')}" id="wf-invoicePrice">
+            ${opts(mapping.invoicePrice)}
+          </select>
+          ${suggestedNote('invoicePrice')}
+        </div>
+      </div>
+      <div class="wizard-field-row">
+        <div class="wizard-field">
+          <div class="wizard-field-label">Variable cost <span class="opt">(optional)</span></div>
+          <select class="wizard-select ${isSuggested(mapping.variableCost,'variableCost')}" id="wf-variableCost">
+            ${opts(mapping.variableCost)}
+          </select>
+          ${suggestedNote('variableCost')}
+        </div>
+        <div class="wizard-field">
+          <div class="wizard-field-label">Quantity <span class="opt">(optional)</span></div>
+          <select class="wizard-select ${isSuggested(mapping.quantity,'quantity')}" id="wf-quantity">
+            ${opts(mapping.quantity)}
+          </select>
+          ${suggestedNote('quantity')}
+        </div>
+      </div>
+      <div class="wizard-field-row">
+        <div class="wizard-field">
+          <div class="wizard-field-label">Sales rep <span class="opt">(optional)</span></div>
+          <select class="wizard-select ${isSuggested(mapping.salesRep,'salesRep')}" id="wf-salesRep">
+            ${opts(mapping.salesRep)}
+          </select>
+          ${suggestedNote('salesRep')}
+        </div>
+        <div class="wizard-field">
+          <div class="wizard-field-label">Region <span class="opt">(optional)</span></div>
+          <select class="wizard-select ${isSuggested(mapping.region,'region')}" id="wf-region">
+            ${opts(mapping.region)}
+          </select>
+          ${suggestedNote('region')}
+        </div>
+      </div>
+      <div class="wizard-field-row">
+        <div class="wizard-field">
+          <div class="wizard-field-label">Customer tier <span class="opt">(optional)</span></div>
+          <select class="wizard-select ${isSuggested(mapping.customerTier,'customerTier')}" id="wf-customerTier">
+            ${opts(mapping.customerTier)}
+          </select>
+          ${suggestedNote('customerTier')}
+        </div>
+        <div class="wizard-field">
+          <div class="wizard-field-label">Date <span class="opt">(optional)</span></div>
+          <select class="wizard-select ${isSuggested(mapping.date,'date')}" id="wf-date">
+            ${opts(mapping.date)}
+          </select>
+          ${suggestedNote('date')}
+        </div>
+      </div>
+      ${mapping.discountLayers && mapping.discountLayers.length > 0 ? `
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+        <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--tx-3);margin-bottom:8px">
+          Detected discount / concession columns — will be used as waterfall layers
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${mapping.discountLayers.map(l => `
+            <div style="background:var(--bg-card-2);border:1px solid var(--border);border-radius:4px;padding:4px 9px;font-size:11px;color:var(--tx-2);font-family:var(--font-mono)">
+              ${l.name}
+            </div>`).join('')}
+        </div>
+      </div>` : ''}
+    `;
+  },
+
+  confirmMapping() {
+    const get = id => document.getElementById('wf-' + id)?.value || null;
+    const mapping = {
+      listPrice:    get('listPrice'),
+      invoicePrice: get('invoicePrice'),
+      variableCost: get('variableCost'),
+      quantity:     get('quantity'),
+      salesRep:     get('salesRep'),
+      region:       get('region'),
+      customerTier: get('customerTier'),
+      date:         get('date'),
+      discountLayers: this._currentSuggestion?.discountLayers || []
+    };
+
+    if (!mapping.listPrice || !mapping.invoicePrice) {
+      document.getElementById('wizard-validation-msg').textContent = '⚠ List price and invoice price are required';
+      return;
+    }
+
+    // Run quality check
+    Data.scoreQuality(AppState.dataset.rows, mapping);
+    AppState.setSchema(mapping);
+    UI.closeWizard();
+
+    // Navigate to M1 if available
+    if (AppState.activeModule === 'landing' || AppState.activeModule === null) {
+      Modules.activate('m1');
+    }
+  },
+
+  saveProfile() {
+    const name = prompt('Profile name (e.g. "NAPA transaction format"):');
+    if (!name) return;
+    const profile = { name, mapping: this._currentSuggestion, savedAt: new Date().toISOString() };
+    AppState.schemaProfiles.push(profile);
+    localStorage.setItem('pa_schema_profiles', JSON.stringify(AppState.schemaProfiles));
+    Toast.success('Schema profile "' + name + '" saved');
+  }
+};
+</script>
+
+<!-- ════════════════════════════════════════════════════════════
+     UI CONTROLLER
+════════════════════════════════════════════════════════════ -->
+<script>
+const UI = {
+
+  // ── Sidebar nav build ───────────────────────────────────
+  buildSidebar() {
+    const nav = document.getElementById('sidebar-nav');
+    const groups = ['diagnostic', 'strategic'];
+    const groupLabels = { diagnostic: 'Diagnostic', strategic: 'Strategic design' };
+
+    let html = '';
+    groups.forEach(group => {
+      const mods = MODULE_REGISTRY.filter(m => m.group === group);
+      html += `<div class="sidebar-section-label">${groupLabels[group]}</div>`;
+      mods.forEach(m => {
+        const phase     = m.phase;
+        const phClass   = { 1:'tag-phase-1', 2:'tag-phase-2', 3:'tag-phase-3', 4:'tag-phase-4' };
+        const phLabel   = { 1:'Ph1', 2:'Ph2', 3:'Ph3', 4:'Ph4' };
+        const isBuilt   = !!(window['Module_' + m.id] && typeof window['Module_' + m.id].init === 'function');
+        const disabled  = !isBuilt ? ' disabled' : '';
+        const needsData = isBuilt && m.requiresData && !AppState.dataset ? ' disabled' : '';
+
+        html += `
+          <div class="nav-item${disabled || needsData}" data-module="${m.id}"
+               onclick="Modules.activate('${m.id}')" title="${m.description}">
+            <div class="nav-icon" style="background:${m.iconBg};color:${m.iconColor}">${m.id.toUpperCase()}</div>
+            <div class="nav-text">
+              <div class="nav-title">${m.name}</div>
+              <div class="nav-sub">${m.sub}</div>
+            </div>
+            <span class="nav-badge ${phClass[phase]}">${phLabel[phase]}</span>
+          </div>`;
+      });
+    });
+    nav.innerHTML = html;
+  },
+
+  updateSidebarState() {
+    this.buildSidebar();
+    // Re-highlight active module
+    const active = document.querySelector(`.nav-item[data-module="${AppState.activeModule}"]`);
+    if (active) active.classList.add('active');
+  },
+
+  // ── Context bar ─────────────────────────────────────────
+  updateContextBar() {
+    const ds = AppState.dataset;
+    const el = document.getElementById('ctxbar');
+
+    if (!ds) {
+      document.getElementById('ctx-dataset-name').textContent = '—';
+      document.getElementById('ctx-row-count').textContent    = '—';
+      document.getElementById('ctx-col-count').textContent    = '—';
+      document.getElementById('ctx-schema-badge').textContent = 'Not mapped';
+      document.getElementById('ctx-schema-badge').className   = 'ctx-badge no-schema';
+      document.getElementById('ctx-change-btn').style.display = 'none';
+      el.classList.remove('has-data');
+      return;
+    }
+
+    const name = ds.source.length > 28 ? ds.source.substring(0, 25) + '…' : ds.source;
+    document.getElementById('ctx-dataset-name').textContent = name;
+    document.getElementById('ctx-row-count').textContent    = ds.rowCount.toLocaleString();
+    document.getElementById('ctx-col-count').textContent    = ds.columns.length;
+    document.getElementById('ctx-change-btn').style.display = 'block';
+    el.classList.add('has-data');
+
+    if (AppState.schema) {
+      document.getElementById('ctx-schema-badge').textContent = 'Mapped ✓';
+      document.getElementById('ctx-schema-badge').className   = 'ctx-badge';
+    } else {
+      document.getElementById('ctx-schema-badge').textContent = 'Not mapped';
+      document.getElementById('ctx-schema-badge').className   = 'ctx-badge no-schema';
+    }
+  },
+
+  // ── Upload / wizard ─────────────────────────────────────
+  openUpload() {
+    document.getElementById('file-input').click();
+  },
+
+  openWizard() {
+    Schema.renderWizard();
+    document.getElementById('schema-wizard').classList.add('open');
+  },
+
+  closeWizard() {
+    document.getElementById('schema-wizard').classList.remove('open');
+  },
+
+  // ── Export button state ─────────────────────────────────
+  updateExportButton() {
+    const hasResults = AppState.sessionExport.length > 0;
+    const btn = document.getElementById('btn-session-export');
+    const pdfBtn = document.getElementById('btn-pdf-export');
+    btn.disabled = !hasResults;
+    btn.style.opacity = hasResults ? '1' : '0.4';
+    if (pdfBtn) {
+      pdfBtn.disabled = !hasResults;
+      pdfBtn.classList.toggle('disabled', !hasResults);
+    }
+  },
+
+  // ── Helpers for modules ─────────────────────────────────
+  fmtCurrency(n, decimals=2) {
+    if (n == null || isNaN(n)) return '—';
+    return '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  },
+  fmtPct(n, decimals=1) {
+    if (n == null || isNaN(n)) return '—';
+    return (n * 100).toFixed(decimals) + '%';
+  },
+  fmtNum(n) {
+    if (n == null || isNaN(n)) return '—';
+    return Number(n).toLocaleString('en-US');
+  },
+
+  renderQualityBanner(pane, quality) {
+    if (!quality) return;
+    const cls = quality.score >= 80 ? 'good' : quality.score >= 60 ? 'warn' : 'bad';
+    const icon = quality.score >= 80 ? '✓' : quality.score >= 60 ? '⚠' : '✕';
+    const msg  = quality.issues.length > 0 ? quality.issues[0] :
+                 quality.warnings.length > 0 ? quality.warnings[0] :
+                 'Data looks clean — ready for analysis';
+    const banner = document.createElement('div');
+    banner.className = 'quality-banner ' + cls;
+    banner.innerHTML = `<div class="quality-score">${quality.score}</div>
+      <div class="quality-body">
+        <div class="quality-title">${icon} Quality score — ${quality.score >= 80 ? 'good' : quality.score >= 60 ? 'review warnings' : 'issues found'}</div>
+        <div class="quality-desc">${msg}${quality.warnings.length > 1 ? ' (+' + (quality.warnings.length-1) + ' more warnings)' : ''}</div>
+      </div>`;
+    pane.prepend(banner);
+  }
+};
+</script>
+
+<!-- ════════════════════════════════════════════════════════════
+     TOAST SYSTEM
+════════════════════════════════════════════════════════════ -->
+<script>
+const Toast = {
+  _show(msg, type, duration=3200) {
+    const icons = { success:'✓', error:'✕', warning:'⚠', info:'◎' };
+    const container = document.getElementById('toast-container');
+    const el = document.createElement('div');
+    el.className = 'toast ' + type;
+    el.innerHTML = `<span class="toast-icon">${icons[type]}</span><span class="toast-msg">${msg}</span>`;
+    container.appendChild(el);
+    setTimeout(() => {
+      el.style.transition = 'opacity .3s, transform .3s';
+      el.style.opacity = '0';
+      el.style.transform = 'translateX(8px)';
+      setTimeout(() => el.remove(), 300);
+    }, duration);
+  },
+  success(msg) { this._show(msg, 'success'); },
+  error(msg)   { this._show(msg, 'error', 5000); },
+  warning(msg) { this._show(msg, 'warning', 4000); },
+  info(msg)    { this._show(msg, 'info'); }
+};
+</script>
+
+<!-- ════════════════════════════════════════════════════════════
+     WIRE-UP
+════════════════════════════════════════════════════════════ -->
+<script>
+// File input handler
+document.getElementById('file-input').addEventListener('change', function() {
+  if (this.files[0]) Data.handleFile(this.files[0]);
+  this.value = ''; // allow re-upload of same file
+});
+
+// Close wizard on overlay click
+document.getElementById('schema-wizard').addEventListener('click', function(e) {
+  if (e.target === this) UI.closeWizard();
+});
+
+// Close wizard on Escape
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') UI.closeWizard();
+});
+
+// Drag-drop on main area
+const mainEl = document.getElementById('main');
+mainEl.addEventListener('dragover', (e) => { e.preventDefault(); });
+mainEl.addEventListener('drop', (e) => {
+  e.preventDefault();
+  const file = e.dataTransfer?.files?.[0];
+  if (file) Data.handleFile(file);
+});
+
+// DataBridge handoff — check sessionStorage on load
+(function checkHandoff() {
+  try {
+    const raw = sessionStorage.getItem('pa_incoming_dataset');
+    if (raw) {
+      const incoming = JSON.parse(raw);
+      sessionStorage.removeItem('pa_incoming_dataset');
+      if (incoming?.rows?.length > 0) {
+        Data._ingest(incoming.rows, incoming.columns, incoming.source + ' (from DataBridge)');
+      }
+    }
+  } catch(e) { /* silent */ }
+})();
+
+// Initialise
+UI.buildSidebar();
+UI.updateContextBar();
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PDF SESSION EXPORT ENGINE
+════════════════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+const PDFExport = {
+
+  async generate() {
+    const exports = AppState.sessionExport;
+    if (!exports || exports.length === 0) {
+      Toast.warning('Run at least one module first — nothing in the session yet');
+      return;
+    }
+
+    Toast.info('Building PDF — this may take a moment…');
+
+    try {
+      const { jsPDF } = window.jspdf;
+      const doc    = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageW  = 210, pageH = 297, mg = 16;
+
+      // ── Cover ──────────────────────────────────────────────────────────
+      doc.setFillColor(14, 14, 15);
+      doc.rect(0, 0, pageW, pageH, 'F');
+
+      doc.setTextColor(200, 169, 110);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.text('PRICING ANALYSER  ·  SESSION EXPORT', mg, 30);
+
+      doc.setTextColor(240, 239, 236);
+      doc.setFontSize(26);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Pricing Analysis', mg, 50);
+      doc.text('Session Report', mg, 62);
+
+      const ds = AppState.dataset;
+      if (ds) {
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(168, 167, 162);
+        doc.text('Dataset: ' + ds.source, mg, 78);
+        doc.text('Rows analysed: ' + ds.rowCount.toLocaleString(), mg, 85);
+      }
+      doc.setTextColor(168, 167, 162);
+      doc.setFontSize(10);
+      doc.text('Exported: ' + new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' }), mg, ds ? 92 : 78);
+
+      doc.setTextColor(200, 169, 110);
+      doc.setFontSize(8);
+      doc.text('MODULES IN THIS REPORT', mg, 112);
+      doc.setTextColor(168, 167, 162);
+      doc.setFontSize(10);
+      exports.forEach((e, i) => {
+        const mod = MODULE_REGISTRY.find(m => m.id === e.module);
+        if (mod) doc.text('· ' + mod.name, mg, 120 + i * 7);
+      });
+
+      doc.setTextColor(65, 63, 58);
+      doc.setFontSize(7.5);
+      doc.text('Generated by Pricing Analyser · archishman-b.github.io/pricing-analyser', mg, pageH - 10);
+
+      // ── One page per module ─────────────────────────────────────────────
+      const modLabels = {
+        m1:'Price Waterfall', m2:'Price Band Analysis', m3:'Discount Governance',
+        m4:'Margin Decomposition', m5:'Economic Value', m6:'SaaS Pricing Studio',
+        m7:'Competitive Intelligence', m8:'Behavioural Pricing Lab'
+      };
+
+      for (const entry of exports) {
+        doc.addPage();
+        let y = mg;
+
+        // Header band
+        doc.setFillColor(19, 19, 21);
+        doc.rect(0, 0, pageW, 20, 'F');
+        doc.setTextColor(200, 169, 110);
+        doc.setFontSize(7.5);
+        doc.setFont('helvetica', 'normal');
+        doc.text('PRICING ANALYSER', mg, 8);
+        doc.setTextColor(240, 239, 236);
+        doc.setFontSize(13);
+        doc.setFont('helvetica', 'bold');
+        doc.text(modLabels[entry.module] || entry.module.toUpperCase(), mg, 16);
+        y = 28;
+
+        this._writeModule(doc, entry.module, entry.result, y, mg, pageW);
+      }
+
+      const fname = 'pricing-analysis-' + new Date().toISOString().split('T')[0] + '.pdf';
+      doc.save(fname);
+      Toast.success('PDF exported — ' + fname);
+
+    } catch(err) {
+      Toast.error('PDF export failed: ' + err.message);
+      console.error(err);
+    }
+  },
+
+  _addLabel(doc, text, y, mg) {
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 99, 94);
+    doc.text(text.toUpperCase(), mg, y);
+    return y + 5;
+  },
+
+  _addStat(doc, label, value, y, mg, colour) {
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 99, 94);
+    doc.text(label + ':', mg, y);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...(colour || [240, 239, 236]));
+    doc.text(String(value), mg + 60, y);
+    return y + 6.5;
+  },
+
+  _addParagraph(doc, text, y, mg, pageW, colour) {
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...(colour || [168, 167, 162]));
+    const lines = doc.splitTextToSize(text, pageW - mg * 2);
+    lines.forEach(l => { doc.text(l, mg, y); y += 5; });
+    return y + 2;
+  },
+
+  _writeModule(doc, modId, result, y, mg, pageW) {
+    if (!result) {
+      y = this._addParagraph(doc, 'No results captured for this module.', y, mg, pageW, [100,99,94]);
+      return;
+    }
+
+    const L = (t) => { y = this._addLabel(doc, t, y, mg); };
+    const S = (label, val, col) => { y = this._addStat(doc, label, val, y, mg, col); };
+    const P = (text, col) => { y = this._addParagraph(doc, text, y, mg, pageW, col); };
+    const gap = () => { y += 4; };
+
+    if (modId === 'm1' && result.summary) {
+      const s = result.summary;
+      L('Summary');
+      S('Avg list price',    UI.fmtCurrency(s.avgList),        [168,167,162]);
+      S('Avg pocket price',  UI.fmtCurrency(s.avgPocket),      [46,196,160]);
+      S('Avg leakage %',     UI.fmtPct(s.avgLeakagePct),       [224,92,92]);
+      S('Total leakage $',   UI.fmtCurrency(s.totalLeakage),   [224,92,92]);
+      S('Transactions',      UI.fmtNum(s.n),                   [240,239,236]);
+      if (s.belowFloorCount > 0) S('Below floor price', UI.fmtNum(s.belowFloorCount), [224,92,92]);
+      gap();
+      if (result.layerBreakdown?.length > 0) {
+        L('Leakage by layer');
+        result.layerBreakdown.forEach(l => S(l.name, UI.fmtCurrency(l.avg) + ' avg (' + UI.fmtPct(l.pctOfList) + ' of list)', [224,92,92]));
+      }
+    }
+
+    if (modId === 'm4' && result.breakeven) {
+      const b = result.breakeven;
+      L('Inputs');
+      S('Current price',   UI.fmtCurrency(result.price),  [168,167,162]);
+      S('Variable cost',   UI.fmtCurrency(result.cost),   [168,167,162]);
+      S('CM%',             UI.fmtPct(b.cmPct),            [46,196,160]);
+      S('Proposed change', UI.fmtPct(result.deltaPct),    [200,169,110]);
+      gap();
+      L('Breakeven result');
+      if (b.impossible) {
+        P('Price cut eliminates contribution margin — no breakeven volume exists.', [224,92,92]);
+      } else {
+        S('Required volume change', UI.fmtPct(Math.abs(b.breakeven)), b.breakeven > 0 ? [224,154,60] : [46,196,160]);
+        S('New price',   UI.fmtCurrency(result.price * (1 + result.deltaPct)), [240,239,236]);
+        S('New CM%',     UI.fmtPct(b.newCMPct), b.newCMPct > b.cmPct ? [46,196,160] : [224,92,92]);
+      }
+      if (result.scenarios?.length > 0) {
+        gap();
+        L('Scenario table');
+        result.scenarios.forEach(sc => {
+          const vPct = (sc.volumeDeltaPct * 100).toFixed(0) + '% vol';
+          S(vPct, (sc.profitDelta >= 0 ? '+' : '') + UI.fmtCurrency(sc.profitDelta, 0) + ' profit Δ', sc.isBetter ? [46,196,160] : [224,92,92]);
+        });
+      }
+    }
+
+    if (modId === 'm2') {
+      L('Regression results');
+      S('R²',               (result.r2 || 0).toFixed(3),                   [200,169,110]);
+      S('Outlier accounts', UI.fmtNum(result.outliersOnly?.length || 0),   [224,92,92]);
+      S('Outlier rate',     UI.fmtPct(result.outPct || 0),                 [224,92,92]);
+      S('Recoverable $',    UI.fmtCurrency(result.recoverableMargin || 0), [46,196,160]);
+      S('Rows analysed',    UI.fmtNum(result.n || 0),                      [168,167,162]);
+      if (result.repBreakdown?.length > 0) {
+        gap();
+        L('Rep recovery breakdown');
+        result.repBreakdown.slice(0, 8).forEach(r =>
+          S(r.rep, UI.fmtPct(r.violationRate) + ' violation · ' + UI.fmtCurrency(r.recovery) + ' recoverable',
+            r.violationRate > 0.2 ? [224,92,92] : [168,167,162]));
+      }
+    }
+
+    if (modId === 'm3') {
+      L('Governance summary');
+      S('Compliance rate',   UI.fmtPct(result.complianceRate || 0),              [46,196,160]);
+      S('Total violations',  UI.fmtNum(result.violations?.length || 0),          [224,92,92]);
+      S('Excess discount $', UI.fmtCurrency(result.totalExcess || 0),            [224,154,60]);
+      S('Critical',          UI.fmtNum(result.bySeverity?.critical || 0),        [224,92,92]);
+      S('High',              UI.fmtNum(result.bySeverity?.high || 0),            [224,92,92]);
+      S('Medium',            UI.fmtNum(result.bySeverity?.medium || 0),          [224,154,60]);
+    }
+
+    if (modId === 'm5' && result.totalEV) {
+      L('Economic value model');
+      S('Reference price',       UI.fmtCurrency(result.referencePrice),       [168,167,162]);
+      S('Differentiation value', UI.fmtCurrency(result.differentiationValue), [46,196,160]);
+      S('Total economic value',  UI.fmtCurrency(result.totalEV),              [200,169,110]);
+      gap();
+      L('Value drivers');
+      (result.drivers || []).forEach(d =>
+        S(d.name, UI.fmtCurrency(parseFloat(d.value) || 0), parseFloat(d.value) >= 0 ? [46,196,160] : [224,92,92]));
+    }
+
+    if (modId === 'm8' && result.overallScore !== undefined) {
+      L('Behavioural audit');
+      S('Overall risk score', result.overallScore.toFixed(1) + ' / 5',                      [200,169,110]);
+      S('Strengths',          result.results?.filter(r => r.status==='good').length || 0,   [46,196,160]);
+      S('Warnings',           result.results?.filter(r => r.status==='warn').length || 0,   [224,154,60]);
+      S('Risks',              result.results?.filter(r => r.status==='risk').length || 0,   [224,92,92]);
+      gap();
+      L('Bias findings');
+      (result.results || []).forEach(b => {
+        const col = b.status === 'good' ? [46,196,160] : b.status === 'warn' ? [224,154,60] : [224,92,92];
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...col);
+        doc.text(b.bias + ' (' + b.score + '/5)', mg, y);
+        y += 5;
+        y = this._addParagraph(doc, b.recommendation, y, mg + 2, pageW, [168,167,162]);
+      });
+    }
+
+    if (modId === 'm6') {
+      P('SaaS studio results captured — see individual tab outputs (Van Westendorp, ARR model, grandfathering) in the tool.', [168,167,162]);
+    }
+
+    if (modId === 'm7') {
+      P('Competitive intelligence captured — price ladder and war risk assessment in the tool.', [168,167,162]);
+    }
+  }
+};
+
+// Wire export buttons
+document.getElementById('btn-session-export').addEventListener('click', () => PDFExport.generate());
+document.getElementById('btn-pdf-export').addEventListener('click',     () => PDFExport.generate());
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════
+     ONBOARDING WIZARD
+════════════════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+const Onboarding = {
+
+  _step: 0,
+
+  shouldShow() {
+    return !AppState.dataset && !localStorage.getItem('pa_onboarded');
+  },
+
+  show() {
+    const ov = document.createElement('div');
+    ov.id = 'ob-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.82);backdrop-filter:blur(6px);z-index:150;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.innerHTML = `
+      <div style="background:#1E1E22;border:1px solid rgba(255,255,255,0.12);border-radius:14px;width:100%;max-width:500px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,0.6)">
+        <div style="background:#131315;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:space-between">
+          <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:600;color:#F0EFEC">Getting started</div>
+          <button onclick="Onboarding.dismiss()" style="width:26px;height:26px;border-radius:5px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#65635E;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+        </div>
+        <div id="ob-body" style="padding:24px 24px 20px;min-height:280px"></div>
+        <div style="padding:14px 24px;border-top:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;gap:6px" id="ob-dots"></div>
+          <div style="display:flex;gap:8px">
+            <button id="ob-back" onclick="Onboarding.prev()" style="height:32px;padding:0 14px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#A8A7A2;font-size:12px;cursor:pointer;display:none;font-family:inherit">Back</button>
+            <button id="ob-next" onclick="Onboarding.next()" style="height:32px;padding:0 18px;border-radius:6px;background:#C8A96E;color:#0E0E0F;font-size:12px;font-weight:600;border:none;cursor:pointer;font-family:inherit">Next →</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(ov);
+    // Close on overlay click
+    ov.addEventListener('click', e => { if (e.target === ov) Onboarding.dismiss(); });
+    this._step = 0;
+    this._render();
+  },
+
+  _steps: [
+    {
+      body: `
+        <div style="text-align:center;margin-bottom:20px">
+          <div style="font-size:36px;margin-bottom:10px">◈</div>
+          <div style="font-family:'Syne',sans-serif;font-size:17px;font-weight:600;color:#F0EFEC;margin-bottom:8px">Pricing Analyser</div>
+          <div style="font-size:12px;color:#A8A7A2;line-height:1.75;max-width:360px;margin:0 auto">A commercial analytics workbench for strategy professionals. From raw transaction data to boardroom-ready pricing diagnostics — no code, no Tableau, no data team.</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          ${[['M1','Diagnostic','Price waterfall','Identify every leakage source'],['M4','Diagnostic','Margin decomposition','Breakeven & what-if analysis'],['M8','Strategic','Behavioural lab','Buyer psychology bias audit'],['M6','Strategic','SaaS studio','Packaging & ARR modelling']].map(([id,type,name,desc]) =>
+            `<div style="background:#131315;border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:10px 12px">
+              <div style="font-size:9px;font-weight:600;letter-spacing:.06em;color:${type==='Diagnostic'?'rgba(123,116,232,0.9)':'rgba(200,169,110,0.9)'};margin-bottom:3px">${id} · ${type.toUpperCase()}</div>
+              <div style="font-size:12px;font-weight:500;color:#F0EFEC;margin-bottom:2px">${name}</div>
+              <div style="font-size:11px;color:#65635E">${desc}</div>
+            </div>`).join('')}
+        </div>`
+    },
+    {
+      body: `
+        <div style="font-size:14px;font-weight:600;font-family:'Syne',sans-serif;color:#F0EFEC;margin-bottom:6px">Load your data</div>
+        <div style="font-size:12px;color:#A8A7A2;line-height:1.75;margin-bottom:16px">Upload any CSV or XLSX transaction export. Your data <strong style="color:#F0EFEC">never leaves your browser</strong> — all computation runs client-side.</div>
+        <div onclick="Onboarding.dismiss();UI.openUpload()"
+          style="background:#131315;border:1.5px dashed rgba(255,255,255,0.12);border-radius:10px;padding:18px;text-align:center;cursor:pointer;margin-bottom:10px;transition:border-color .15s"
+          onmouseover="this.style.borderColor='rgba(200,169,110,0.5)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.12)'">
+          <div style="font-size:20px;margin-bottom:6px">↑</div>
+          <div style="font-size:13px;font-weight:500;color:#F0EFEC;margin-bottom:3px">Upload your file</div>
+          <div style="font-size:11px;color:#65635E">CSV · TSV · XLSX · drag and drop supported</div>
+        </div>
+        <div style="text-align:center;font-size:11px;color:#65635E;margin-bottom:10px">— or —</div>
+        <button onclick="Onboarding.dismiss();Data.loadSample()"
+          style="width:100%;height:36px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#A8A7A2;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s"
+          onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
+          Load sample data — 2,000 synthetic B2B transactions
+        </button>
+        <div style="margin-top:10px;font-size:11px;color:#65635E;line-height:1.6">After loading, a schema wizard maps your columns automatically — pre-filled suggestions based on column names.</div>`
+    },
+    {
+      body: `
+        <div style="font-size:14px;font-weight:600;font-family:'Syne',sans-serif;color:#F0EFEC;margin-bottom:6px">No data? Start here</div>
+        <div style="font-size:12px;color:#A8A7A2;line-height:1.75;margin-bottom:14px">Two modules are always active — no dataset needed. Good starting points if you're exploring the tool.</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+          <div onclick="Onboarding.dismiss();Modules.activate('m8')"
+            style="background:#131315;border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:12px 14px;cursor:pointer"
+            onmouseover="this.style.borderColor='rgba(200,169,110,0.4)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.07)'">
+            <div style="font-size:9px;font-weight:600;letter-spacing:.06em;color:#C8A96E;margin-bottom:3px">M8 · BEHAVIOURAL PRICING LAB</div>
+            <div style="font-size:13px;font-weight:500;color:#F0EFEC;margin-bottom:3px">Stress-test your pricing structure →</div>
+            <div style="font-size:11px;color:#65635E">Enter tier prices and run an 8-bias audit against buyer psychology. Instant results.</div>
+          </div>
+          <div onclick="Onboarding.dismiss();Modules.activate('m4')"
+            style="background:#131315;border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:12px 14px;cursor:pointer"
+            onmouseover="this.style.borderColor='rgba(91,156,246,0.4)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.07)'">
+            <div style="font-size:9px;font-weight:600;letter-spacing:.06em;color:#5B9CF6;margin-bottom:3px">M4 · MARGIN DECOMPOSITION</div>
+            <div style="font-size:13px;font-weight:500;color:#F0EFEC;margin-bottom:3px">Run a breakeven analysis →</div>
+            <div style="font-size:11px;color:#65635E">Enter price and variable cost manually. See the breakeven curve immediately.</div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:#65635E">You can revisit this guide anytime — press <kbd style="background:#131315;border:1px solid rgba(255,255,255,0.1);border-radius:3px;padding:1px 5px;font-size:10px">?</kbd> to reopen it.</div>`
+    }
+  ],
+
+  _render() {
+    document.getElementById('ob-body').innerHTML = this._steps[this._step].body;
+    // Step dots
+    const dots = document.getElementById('ob-dots');
+    dots.innerHTML = this._steps.map((_, i) =>
+      `<div style="width:${i===this._step?'16px':'6px'};height:6px;border-radius:3px;background:${i===this._step?'#C8A96E':'rgba(255,255,255,0.15)'};transition:all .2s"></div>`
+    ).join('');
+    const back = document.getElementById('ob-back');
+    const next = document.getElementById('ob-next');
+    if (back) back.style.display = this._step > 0 ? '' : 'none';
+    if (next) next.textContent = this._step === this._steps.length - 1 ? 'Get started' : 'Next →';
+  },
+
+  next() {
+    if (this._step < this._steps.length - 1) { this._step++; this._render(); }
+    else this.dismiss();
+  },
+
+  prev() {
+    if (this._step > 0) { this._step--; this._render(); }
+  },
+
+  dismiss() {
+    const el = document.getElementById('ob-overlay');
+    if (el) { el.style.opacity = '0'; el.style.transition = 'opacity .2s'; setTimeout(() => el.remove(), 200); }
+    localStorage.setItem('pa_onboarded', '1');
+  }
+};
+
+// ? key reopens onboarding
+document.addEventListener('keydown', e => {
+  if (e.key === '?' && !e.target.matches('input,textarea,select')) Onboarding.show();
+});
+
+// Show on first visit after short delay
+setTimeout(() => { if (Onboarding.shouldShow()) Onboarding.show(); }, 900);
+</script>
+
+</body>
+</html>
