@@ -2,7 +2,7 @@
 
 **A browser-native pricing intelligence workbench for strategy professionals who have always had the frameworks but never had the tools.**
 
-→ **[Launch the tool](https://archishman-b.github.io/pricing-analyser/)** · **[Build journal](https://archishman-b.github.io/pricing-analyser/pricing-analyser-build-journal.html)**
+→ **[Launch the tool](https://archishman-b.github.io/pricing-analyser/)** · **[Theory companion](https://archishman-b.github.io/pricing-analyser/pricing-theory-companion.html)** · **[Build journal](https://archishman-b.github.io/pricing-analyser/pricing-analyser-build-journal.html)**
 
 ---
 
@@ -68,7 +68,8 @@ pricing-analyser/
 ├── m8-behavlab.js                        ← behavioural pricing lab
 ├── sample-b2b-transactions.csv           ← 2,000-row synthetic demo dataset
 ├── pricing-analyser-bundled.html         ← single-file version for local use
-└── pricing-analyser-build-journal.html   ← full PM lifecycle documentation
+├── pricing-analyser-build-journal.html   ← full PM lifecycle documentation
+└── pricing-theory-companion.html         ← theoretical framework companion
 ```
 
 Libraries loaded from CDN — no npm, no build pipeline:
@@ -78,7 +79,7 @@ Libraries loaded from CDN — no npm, no build pipeline:
 
 ## Who built this and why
 
-12 years across Tata Motors, Mahindra, Monitor Deloitte, and Accenture. Pricing transformations, commercial architecture, XaaS transitions, post-M&A operating models.
+12 years across Tata Motors, Mahindra, Monitor Deloitte, and Accenture Strategy. Pricing transformations, commercial architecture, XaaS transitions, post-M&A operating models.
 
 The analytical work that drives real pricing decisions — waterfall analysis, leakage identification, discount governance, margin decomposition — was being done in bespoke Excel models built from scratch on every engagement. Models that took days to build, couldn't be handed off, and were discarded the moment the project closed.
 
@@ -89,6 +90,8 @@ The Pricing Analyser is the tool I needed on every engagement and never had.
 ## Build in public
 
 This project is being built in public. The methodology behind every analytical decision is documented in the [build journal](https://archishman-b.github.io/pricing-analyser/pricing-analyser-build-journal.html) — the PM lifecycle, the architecture decisions, the consulting frameworks being operationalised.
+
+The [theory companion](https://archishman-b.github.io/pricing-analyser/pricing-theory-companion.html) documents the pricing frameworks behind each module in depth — drawn from Nagle & Müller, Lehrskov-Schmidt, and Ariely.
 
 ---
 
@@ -102,7 +105,7 @@ This project is being built in public. The methodology behind every analytical d
 
 | Version | Status | Contents |
 |---------|--------|---------|
-| **v1.0** | **Shipped** | All 8 modules · PDF session export · Onboarding wizard · Sample dataset |
+| **v1.0** | **Shipped** | All 8 modules · PDF session export · Onboarding wizard · Sample dataset · Theory companion |
 
 ---
 
