@@ -583,6 +583,10 @@ body {
   .hero { padding: 40px 24px 36px; }
   .two-col { grid-template-columns: 1fr; }
 }
+
+/* ── Hide sidebar scrollbar (keep scroll behaviour) ── */
+.sidebar-body::-webkit-scrollbar { display: none; }
+.sidebar-body { -ms-overflow-style: none; scrollbar-width: none; }
 </style>
 </head>
 <body>
@@ -1353,9 +1357,9 @@ body {
 </div>
 
 <script>
-// Sidebar scroll tracking
 const sections = document.querySelectorAll('.content-section, .hero');
 const navLinks = document.querySelectorAll('.nav-link');
+const sidebarBody = document.querySelector('.sidebar-body');
 
 const observer = new IntersectionObserver(entries => {
   entries.forEach(entry => {
@@ -1363,7 +1367,18 @@ const observer = new IntersectionObserver(entries => {
       const id = entry.target.id;
       navLinks.forEach(l => {
         l.classList.remove('active');
-        if (l.getAttribute('href') === '#' + id) l.classList.add('active');
+        if (l.getAttribute('href') === '#' + id) {
+          l.classList.add('active');
+          if (sidebarBody) {
+            const top = l.offsetTop;
+            const bottom = top + l.offsetHeight;
+            const bTop = sidebarBody.scrollTop;
+            const bBottom = bTop + sidebarBody.clientHeight;
+            if (top < bTop + 40 || bottom > bBottom - 40) {
+              sidebarBody.scrollTo({ top: top - sidebarBody.clientHeight / 2, behavior: 'smooth' });
+            }
+          }
+        }
       });
     }
   });
